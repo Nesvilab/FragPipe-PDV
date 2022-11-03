@@ -6,11 +6,8 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="PDV" />
+        <module name="PDV_for_FragerGUI" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="PDV" target="1.8" />
-    </bytecodeTargetLevel>
   </component>
 </project>
