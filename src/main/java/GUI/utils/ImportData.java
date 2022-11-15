@@ -490,29 +490,29 @@ public class ImportData {
                 mgfFiles.add(spectralFilePath);
                 spectrumFileTypes.put(spectrumName, "mgf");
             } else if (spectralFilePath.endsWith("raw")){
-                if (new File(spectralFilePath.replace(".raw", "_calibrated.mgf")).exists()){
+                if (new File(spectralFilePath.replace(".raw", "_uncalibrated.mgf")).exists()){
 //                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".raw", "_calibrated.mgf")));
 //                    mgfFiles.add(spectralFilePath.replace(".raw", "_calibrated.mgf"));
 //                    spectrumFileTypes.put(spectrumName, "_calibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_calibrated.mzml"));
+                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_uncalibrated.mzml"));
                 } else {
 //                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".raw", "_uncalibrated.mgf")));
 //                    mgfFiles.add(spectralFilePath.replace(".raw", "_uncalibrated.mgf"));
 //                    spectrumFileTypes.put(spectrumName, "_uncalibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_uncalibrated.mzml"));
+                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_calibrated.mzml"));
                 }
 
             } else if (spectralFilePath.endsWith(".d")){
-                if (new File(spectralFilePath.replace(".d", "_calibrated.mgf")).exists()){
+                if (new File(spectralFilePath.replace(".d", "_uncalibrated.mgf")).exists()){
 //                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".d", "_calibrated.mgf")));
 //                    mgfFiles.add(spectralFilePath.replace(".d", "_calibrated.mgf"));
 //                    spectrumFileTypes.put(spectrumName, "_calibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
+                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
                 } else {
 //                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".d", "_uncalibrated.mgf")));
 //                    mgfFiles.add(spectralFilePath.replace(".d", "_uncalibrated.mgf"));
 //                    spectrumFileTypes.put(spectrumName, "_uncalibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
+                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
                 }
 
             } else if (spectralFilePath.toLowerCase().endsWith("mzml")){
@@ -541,7 +541,7 @@ public class ImportData {
         spectrumFileTypes.put(spectrumName, "mzml");
     }
 
-    private void processTable() throws SQLException, IOException, MzMLUnmarshallerException, FileParsingException, ClassNotFoundException, InterruptedException {
+    private void processTable() throws SQLException, IOException, ClassNotFoundException {
 
         Connection connection = sqliteConnection.getConnection();
 
