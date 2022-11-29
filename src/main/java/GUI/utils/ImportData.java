@@ -166,9 +166,10 @@ public class ImportData {
 
             if (manifestFile != null){
                 goThroughFolder();
-                if (new File(latestManiFestFile.getAbsolutePath().replace("fp-manifest", "db")).exists()){
+
+                if (new File(resultsFolder.getAbsolutePath() + "/FP-PDV.db").exists()){
                     try {
-                        importExistDB(resultsFolder.getAbsolutePath() + "/" + latestManiFestFile.getName().split("\\.")[0] + ".db");
+                        importExistDB(resultsFolder.getAbsolutePath() + "/FP-PDV.db");
                     } catch (Exception e){
                         JOptionPane.showMessageDialog(
                                 null, e.getMessage(),
@@ -179,7 +180,7 @@ public class ImportData {
                 } else {
                     getProteinSeq();
                     getTableIndexes();
-                    initialDB(latestManiFestFile.getName());
+                    initialDB();
                     sqliteConnection.setPSMScoreNum(psmIndexToName.size());
                     sqliteConnection.setProteinScoreNum(proteinIndexToName.size());
                     processTable();
@@ -209,7 +210,11 @@ public class ImportData {
 
         for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())) {
 
-            if (eachFileInMax.getName().endsWith("manifest")) {
+//            if (eachFileInMax.getName().endsWith("manifest")) {
+//                allManiFile.add(eachFileInMax.getAbsolutePath());
+//            } /// For old version test only
+
+            if (eachFileInMax.getName().equals("fragpipe-files.fp-manifest")) {
                 allManiFile.add(eachFileInMax.getAbsolutePath());
             }
             if (eachFileInMax.getName().equals("umpire-se.params")){
@@ -342,6 +347,8 @@ public class ImportData {
                             for (File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
                                 if (eachFileInMax.getName().startsWith(mzmlName + "_") && eachFileInMax.getName().endsWith("mzML")){
                                     diaSpectrumFiles.get(expName).add(eachFileInMax.getAbsolutePath());
+                                    String[] fileArr = eachFileInMax.getAbsolutePath().split(pattern);
+                                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzML")[0], eachFileInMax.getAbsolutePath());
                                 }
                             }
                         }
@@ -366,6 +373,8 @@ public class ImportData {
                             for (File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
                                 if (eachFileInMax.getName().startsWith(mzmlName + "_") && eachFileInMax.getName().endsWith("mzML")){
                                     diaSpectrumFiles.get(expName).add(eachFileInMax.getAbsolutePath());
+                                    String[] fileArr = eachFileInMax.getAbsolutePath().split(pattern);
+                                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzML")[0], eachFileInMax.getAbsolutePath());
                                 }
                             }
                         }
@@ -377,8 +386,8 @@ public class ImportData {
         bufferedReader.close();
     }
 
-    private void initialDB(String manifestName) throws SQLException, ClassNotFoundException {
-        String dbName = resultsFolder.getAbsolutePath() + "/" + manifestName.split("\\.")[0] + ".db";
+    private void initialDB() throws SQLException, ClassNotFoundException {
+        String dbName = resultsFolder.getAbsolutePath() + "/FP-PDV.db";
         guiMainClass.databasePath = dbName;
 
         File dbFile = new File(dbName);
@@ -1209,7 +1218,7 @@ public class ImportData {
 
         for (String eachMod : assignedMod.split(",")) {
 
-            if (eachMod.contains(":")) { //15.9949:Oxidation (Oxidation or Hydroxylation)
+            if (eachMod.contains(":") || !eachMod.contains("(")) { //15.9949:Oxidation (Oxidation or Hydroxylation)
                 //Do nothing
             } else {
 

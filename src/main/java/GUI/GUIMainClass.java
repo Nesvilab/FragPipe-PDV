@@ -3555,7 +3555,6 @@ public class GUIMainClass extends JFrame {
     }
 
     private void updateSpectrumFactoryFirst(ProgressDialogX progressDialog) throws IOException, ClassNotFoundException {
-
         String spectralFilePath = spectrumFileMap.get(spectrumFileOrder.get(0));
 
         if (Files.exists(new File(spectralFilePath).toPath())) {

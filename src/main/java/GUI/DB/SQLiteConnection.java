@@ -133,7 +133,7 @@ public class SQLiteConnection {
 
         for (String eachMod : assignedMod.split(",")) {
 
-            if (eachMod.contains(":")) { //15.9949:Oxidation (Oxidation or Hydroxylation)
+            if (eachMod.contains(":") || !eachMod.contains("(")) { //15.9949:Oxidation (Oxidation or Hydroxylation)
                 //Do nothing
             } else {
 
