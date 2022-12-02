@@ -73,6 +73,9 @@ public class ExportExpectedSizeDialog extends JDialog {
      * Check peptide or not
      */
     private Boolean isCheckPeptide;
+    private Boolean isNormPeptide;
+    private Boolean isCheckSpectra;
+    private Boolean isPredict;
     /**
      * Pattern removing illegal
      */
@@ -96,7 +99,7 @@ public class ExportExpectedSizeDialog extends JDialog {
      * @param spectrumKey Spectrum Key
      */
     public ExportExpectedSizeDialog(SpectrumMainPanel spectrumMainPanel, JLayeredPane jLayeredPane, SequenceFragmentationPanel secondarySpectrumPlotsJPanel, JPanel mirrorSequenceFragmentationPanel,
-                                    SpectrumContainer spectrumJPanel, Integer peptideSize, String spectrumKey, Boolean isCheckPeptide){
+                                    SpectrumContainer spectrumJPanel, Integer peptideSize, String spectrumKey, Boolean isNormPeptide, Boolean isCheckSpectra, Boolean isCheckPeptide, Boolean isPredict){
         super(spectrumMainPanel.parentFrame, true);
 
         this.jLayeredPane = jLayeredPane;
@@ -104,6 +107,9 @@ public class ExportExpectedSizeDialog extends JDialog {
         this.mirrorSequenceFragmentationPanel = mirrorSequenceFragmentationPanel;
         this.spectrumJPanel = spectrumJPanel;
         this.isCheckPeptide = isCheckPeptide;
+        this.isNormPeptide = isNormPeptide;
+        this.isCheckSpectra = isCheckSpectra;
+        this.isPredict = isPredict;
         this.spectrumMainPanel = spectrumMainPanel;
         this.parentJFrame = spectrumMainPanel.parentFrame;
         this.peptideSize = peptideSize;
@@ -339,12 +345,14 @@ public class ExportExpectedSizeDialog extends JDialog {
      * @param evt window event
      */
     private void formWindowClosing(WindowEvent evt) {
-        if(mirrorSequenceFragmentationPanel != null){
+        if(isCheckSpectra){
             spectrumMainPanel.showMirrorJMenuItemActionPerformed(null);
         } else if(isCheckPeptide){
             spectrumMainPanel.showCheckPeptideJMenuItemActionPerformed(null);
-        } else {
+        } else if (isNormPeptide){
             spectrumMainPanel.showSpectrumJMenuItemAction(null);
+        } else if (isPredict){
+            spectrumMainPanel.showPredictionJMenuItemActionPerformed(null);
         }
         spectrumMainPanel.setBounds(0, 0, oldWidth, oldHeight);
         spectrumMainPanel.spectrumShowPanel.setBounds(0, 0, oldWidth, oldHeight);

@@ -21,9 +21,11 @@ import com.compomics.util.experiment.massspectrometry.*;
 import com.compomics.util.gui.spectrum.FragmentIonTable;
 import com.compomics.util.gui.spectrum.SequenceFragmentationPanel;
 import com.compomics.util.gui.spectrum.SpectrumPanel;
+import com.compomics.util.gui.waiting.waitinghandlers.ProgressDialogX;
 import com.compomics.util.preferences.LastSelectedFolder;
 import com.compomics.util.preferences.SequenceMatchingPreferences;
 import com.compomics.util.preferences.UtilitiesUserPreferences;
+import umich.ms.fileio.filetypes.diann.DiannSpeclibReader;
 import umich.ms.fileio.filetypes.diann.PredictionEntry;
 
 import javax.swing.*;
@@ -1136,7 +1138,7 @@ public class SpectrumMainPanel extends JPanel {
      */
     private void exportSpectrumAsFigure() {
 
-        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, spectrumJLayeredPane, sequenceFragmentationPanel, null, spectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), false);
+        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, spectrumJLayeredPane, sequenceFragmentationPanel, null, spectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), true, false, false, false);
 
         spectrumSetAction.setExportDialog(exportExpectedSizeDialog);
 
@@ -1148,7 +1150,7 @@ public class SpectrumMainPanel extends JPanel {
      */
     private void exportMirrorSpectrumAsFigure() {
 
-        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, mirrorJLayeredPane, sequenceFragmentationPanelMirror, mirrorFragmentPanel, mirrorSpectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), false);
+        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, mirrorJLayeredPane, sequenceFragmentationPanelMirror, mirrorFragmentPanel, mirrorSpectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), false, true, false, false);
 
         mirrorSetAction.setExportDialog(exportExpectedSizeDialog);
 
@@ -1160,7 +1162,7 @@ public class SpectrumMainPanel extends JPanel {
      */
     private void exportCheckSpectrumAsFigure() {
 
-        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, checkPeptideJLayeredPane, sequenceFragmentationPanelCheck, checkFragmentPanel, checkPeptideSpectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), true);
+        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, checkPeptideJLayeredPane, sequenceFragmentationPanelCheck, checkFragmentPanel, checkPeptideSpectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), false, false, true, false);
 
         checkSetAction.setExportDialog(exportExpectedSizeDialog);
 
@@ -1172,7 +1174,7 @@ public class SpectrumMainPanel extends JPanel {
      */
     private void exportPreSpectrumAsFigure() {
 
-        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, predictionJLayeredPane, sequenceFragmentationPanelPredicted, predictedFragmentPanel, predictedSpectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), false);
+        ExportExpectedSizeDialog exportExpectedSizeDialog = new ExportExpectedSizeDialog(this, predictionJLayeredPane, sequenceFragmentationPanelPredicted, predictedFragmentPanel, predictedSpectrumPanel, currentPeptideSequence.length(), currentSpectrum.getSpectrumTitle(), false, false, false, true);
 
         preSetAction.setExportDialog(exportExpectedSizeDialog);
 
@@ -1345,7 +1347,7 @@ public class SpectrumMainPanel extends JPanel {
         peptideCheckMenu.setVisible(true);
     }
 
-    private void showPredictionJMenuItemActionPerformed(ActionEvent evt){
+    public void showPredictionJMenuItemActionPerformed(ActionEvent evt){
         showSpectrumSelected = false;
         ionTableSelected = false;
         mirrorSelected = false;
@@ -1359,6 +1361,47 @@ public class SpectrumMainPanel extends JPanel {
         showPredictionJMenuItem.setSelected(true);
 
         exportGraphicsMenu.setVisible(true);
+
+        if (parentFrame.predictionEntryHashMap.size() == 0){
+            ProgressDialogX progressDialog = new ProgressDialogX(parentFrame,
+                    Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMass.png")),
+                    Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMassWait.png")),
+                    true);
+            progressDialog.setPrimaryProgressCounterIndeterminate(true);
+            progressDialog.setTitle("First time Loading predicted spectra. Please Wait...");
+
+            new Thread(() -> {
+                try {
+                    progressDialog.setVisible(true);
+                } catch (IndexOutOfBoundsException ignored) {
+                }
+            }, "ProgressDialog").start();
+            new Thread("Import_Spectra") {
+                @Override
+                public void run() {
+                    try {
+                        if (parentFrame.expInformation.contains("inner_defined_empty_exp")) {
+                            DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin");
+                            parentFrame.predictionEntryHashMap = dslr.getPreds();
+                        } else {
+                            for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
+                                if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
+                                    DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
+                                    parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
+                                }
+                            }
+                        }
+                        progressDialog.setRunFinished();
+                        updateSpectrum();
+                    } catch (Exception e){
+                        progressDialog.setRunFinished();
+                        JOptionPane.showMessageDialog(
+                                parentFrame, "Failed to load predicted spectra, please check it.",
+                                "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }.start();
+        }
 
         mainShowJPanel.removeAll();
         GroupLayout mainShowJPanelLayout = new GroupLayout(mainShowJPanel);
@@ -2162,7 +2205,7 @@ public class SpectrumMainPanel extends JPanel {
                     predictionJLayeredPane.add(sequenceFragmentationPanelPredicted);
                     zoomAction(sequenceFragmentationPanelPredicted, modSequence, false);
 
-                    mirrorSetAction = new SetAction(this, predictionJLayeredPane, sequenceFragmentationPanelPredicted, predictedFragmentPanel, predictedSpectrumPanel, 0, 0, spectrumShowPanel);
+                    preSetAction = new SetAction(this, predictionJLayeredPane, sequenceFragmentationPanelPredicted, predictedFragmentPanel, predictedSpectrumPanel, 0, 0, spectrumShowPanel);
 
                     ArrayList<ArrayList<IonMatch>> allAnnotations = new ArrayList<>();
                     allAnnotations.add(annotations);
@@ -2358,7 +2401,7 @@ public class SpectrumMainPanel extends JPanel {
             }
         }
 
-        if (parentFrame.predictionEntryHashMap.size() == 0){
+        if (!parentFrame.hasPredictionSpectra){
             showPredictionJMenuItem.setEnabled(false);
         }
 

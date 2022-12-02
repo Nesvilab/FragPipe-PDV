@@ -260,7 +260,7 @@ public class GUIMainClass extends JFrame {
     /**
      * Results folder
      */
-    private File resultsFolder;
+    public File resultsFolder;
     /**
      * Threads number
      */
@@ -276,7 +276,7 @@ public class GUIMainClass extends JFrame {
     /**
      *
      */
-    private HashMap<String, Integer[]> experimentInfo = new HashMap<>();
+    public HashMap<String, Integer[]> experimentInfo = new HashMap<>();
     /**
      *
      */
@@ -313,6 +313,14 @@ public class GUIMainClass extends JFrame {
      *
      */
     public HashMap<String, PredictionEntry> predictionEntryHashMap = new HashMap<>();
+    /**
+     * Experiment information
+     */
+    public ArrayList<String> expInformation = new ArrayList<>();
+    /**
+     *
+     */
+    public Boolean hasPredictionSpectra = false;
     /**
      *
      */
@@ -2427,7 +2435,10 @@ public class GUIMainClass extends JFrame {
                    } else {
                        spectrumMatch = sqliteConnection.getSpectrumMatch(selectedPsmKey);
                    }
-                    updateSpectrum(getSpectrum(selectedPsmKey), spectrumMatch);
+                   String spectrumTitle =  sqliteConnection.getSpectrumOldTitle(selectedPsmKey);
+                   checkSpectrumFactory(spectrumTitle.split("\\.")[0]);
+
+                   updateSpectrum(getSpectrum(selectedPsmKey), spectrumMatch);
                 } catch (SQLException | FileParsingException | MzMLUnmarshallerException | IOException e) {
                     e.printStackTrace();
                 }
@@ -3219,38 +3230,13 @@ public class GUIMainClass extends JFrame {
 
         if (!finishedSpectrumFiles.contains(spectrumFileName)) {
             if (readFactoryThread.isAlive()) {
-                readFactoryThread.interrupt();
+                while (readFactoryThread.isInterrupted()){
+                    readFactoryThread.interrupt();
+                }
+
                 updateSpectrumFactory(true, spectrumFileName);
             }
         }
-//        ProgressDialogX progressDialog = new ProgressDialogX(this,
-//                Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMass.png")),
-//                Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMassWait.png")),
-//                true);
-//        progressDialog.setPrimaryProgressCounterIndeterminate(true);
-//        progressDialog.setTitle("Load new spectrum file. Please Wait...");
-//
-//        new Thread(() -> {
-//            try {
-//                progressDialog.setVisible(true);
-//            } catch (IndexOutOfBoundsException ignored) {
-//            }
-//        }, "ProgressDialog").start();
-//        new Thread("DisplayThread") {
-//            @Override
-//            public void run() {
-//
-//                if (!finishedSpectrumFiles.contains(spectrumFileName)) {
-//                    if (readFactoryThread.isAlive()) {
-//                        readFactoryThread.interrupt();
-//                        updateSpectrumFactory(true, spectrumFileName);
-//                    }
-//                }
-//
-//                progressDialog.setRunFinished();
-//            }
-//        }.start();
-
     }
 
     /**
@@ -3440,6 +3426,8 @@ public class GUIMainClass extends JFrame {
                     spectrumFileOrder = oneImport.getSpectrumFileOrder();
                     spectrumFileMap = oneImport.getSpectrumFileMap();
                     predictionEntryHashMap = oneImport.getPredictionEntryHashMap();
+                    expInformation = oneImport.getExpInformation();
+                    hasPredictionSpectra = oneImport.getHasPredictionSpectra();
 
                     psmScoreName = oneImport.getPSMScoreName();
                     proteinScoreName = oneImport.getProteinScoreName();
@@ -3529,14 +3517,16 @@ public class GUIMainClass extends JFrame {
                         if (Files.exists(new File(spectralFilePath).toPath())) {
                             loadingJButton.setText(eachFileName);
 //                            try {
-//                                Thread.sleep(10000);
+//                                sleep(1000);
 //                            } catch (InterruptedException e) {
 //                                e.printStackTrace();
 //                            }
                             try {
                                 readSpectrumFile(spectralFilePath);
-                            } catch (IOException | ClassNotFoundException e) {
-                                e.printStackTrace();
+                            } catch (Exception e) {
+                                if (e.getClass() != InterruptedException.class){
+                                    e.printStackTrace();
+                                }
                             }
                         } else {
                             JOptionPane.showMessageDialog(

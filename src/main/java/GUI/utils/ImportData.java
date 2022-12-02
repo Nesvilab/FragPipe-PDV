@@ -107,6 +107,10 @@ public class ImportData {
     /**
      *
      */
+    private Boolean hasPredictionSpectra = false;
+    /**
+     *
+     */
     private ArrayList<String> expNumList = new ArrayList<>();
     /**
      * PSM result file column index
@@ -240,18 +244,6 @@ public class ImportData {
     }
 
     private void goThroughFolder() throws IOException {
-
-//        ArrayList<String> allManiFile = new ArrayList<>();
-//
-//        for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())) {
-//
-//            if (eachFileInMax.getName().endsWith("manifest")) {
-//                allManiFile.add(eachFileInMax.getAbsolutePath());
-//            }
-//        }
-//
-//        allManiFile.sort(Collections.reverseOrder());
-//        latestManiFestFile = new File(allManiFile.get(0));
         processManifestFile(latestManiFestFile);
 
         if (expInformation.contains("inner_defined_empty_exp")){
@@ -265,9 +257,9 @@ public class ImportData {
             }});
 
             if (new File(resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
-                DiannSpeclibReader dslr = new DiannSpeclibReader(resultsFolder.getAbsolutePath() +  "/spectraRT.predicted.bin");
-
-                predictionEntryHashMap = dslr.getPreds();
+                hasPredictionSpectra = true;
+//                DiannSpeclibReader dslr = new DiannSpeclibReader(resultsFolder.getAbsolutePath() +  "/spectraRT.predicted.bin");
+//                predictionEntryHashMap = dslr.getPreds();
             }
 
         } else {
@@ -285,9 +277,10 @@ public class ImportData {
                     }});
 
                     if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
-                        DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() +  "/spectraRT.predicted.bin");
-
-                        predictionEntryHashMap.putAll(dslr.getPreds());
+                        hasPredictionSpectra = true;
+//                        DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() +  "/spectraRT.predicted.bin");
+//
+//                        predictionEntryHashMap.putAll(dslr.getPreds());
                     }
 
                 }
@@ -343,7 +336,7 @@ public class ImportData {
                         if (!isDIAUmpire){
                             ddaSpectrumFiles.get(expName).add(lineSplit[0]);
                         } else {
-                            String mzmlName = lineSplit[0].split(pattern)[lineSplit[0].split(pattern).length - 1].split("\\.d")[0];
+                            String mzmlName = lineSplit[0].split(pattern)[lineSplit[0].split(pattern).length - 1].split("\\.")[0];
                             for (File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
                                 if (eachFileInMax.getName().startsWith(mzmlName + "_") && eachFileInMax.getName().endsWith("mzML")){
                                     diaSpectrumFiles.get(expName).add(eachFileInMax.getAbsolutePath());
@@ -382,7 +375,6 @@ public class ImportData {
                 }
             }
         }
-
         bufferedReader.close();
     }
 
@@ -459,95 +451,6 @@ public class ImportData {
         guiMainClass.searchItemTextField.setToolTipText("Find items");
 
 //        processSpectralFilesBack(resultsDict.keySet());
-    }
-
-    private void processSpectralFiles(String expName) throws IOException, ClassNotFoundException {
-        expName = expName.replace("_Dash_", "-");
-        long time1 = System.currentTimeMillis();
-        for (String spectralFilePath:ddaSpectrumFiles.get(expName)){
-            if (Files.exists(new File(spectralFilePath).toPath())) {
-                readSpectrumFile(spectralFilePath);
-            } else {
-                JOptionPane.showMessageDialog(
-                        null, "Invalid spectrum file path, please check it.",
-                        "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
-                progressDialog.setRunFinished();
-                break;
-            }
-        }
-        System.out.println("Read mzml cost: " + (System.currentTimeMillis() - time1)/1000);
-        for (String spectralFilePath:diaSpectrumFiles.get(expName)){
-            if (Files.exists(new File(spectralFilePath).toPath())) {
-                readSpectrumFile(spectralFilePath);
-            } else {
-                JOptionPane.showMessageDialog(
-                        null, "Invalid spectrum file path, please check it.",
-                        "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
-                progressDialog.setRunFinished();
-                break;
-            }
-        }
-
-    }
-
-    private void readSpectrumFile(String spectralFilePath) throws IOException, ClassNotFoundException {
-        String spectrumName = new File(spectralFilePath).getName().split("\\.")[0];
-        if (!spectrumFileTypes.containsKey(spectrumName)){
-
-            if (spectralFilePath.endsWith("mgf")){
-                spectrumFactory.addSpectra(new File(spectralFilePath));
-                mgfFiles.add(spectralFilePath);
-                spectrumFileTypes.put(spectrumName, "mgf");
-            } else if (spectralFilePath.endsWith("raw")){
-                if (new File(spectralFilePath.replace(".raw", "_uncalibrated.mgf")).exists()){
-//                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".raw", "_calibrated.mgf")));
-//                    mgfFiles.add(spectralFilePath.replace(".raw", "_calibrated.mgf"));
-//                    spectrumFileTypes.put(spectrumName, "_calibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_uncalibrated.mzml"));
-                } else {
-//                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".raw", "_uncalibrated.mgf")));
-//                    mgfFiles.add(spectralFilePath.replace(".raw", "_uncalibrated.mgf"));
-//                    spectrumFileTypes.put(spectrumName, "_uncalibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_calibrated.mzml"));
-                }
-
-            } else if (spectralFilePath.endsWith(".d")){
-                if (new File(spectralFilePath.replace(".d", "_uncalibrated.mgf")).exists()){
-//                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".d", "_calibrated.mgf")));
-//                    mgfFiles.add(spectralFilePath.replace(".d", "_calibrated.mgf"));
-//                    spectrumFileTypes.put(spectrumName, "_calibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
-                } else {
-//                    spectrumFactory.addSpectra(new File(spectralFilePath.replace(".d", "_uncalibrated.mgf")));
-//                    mgfFiles.add(spectralFilePath.replace(".d", "_uncalibrated.mgf"));
-//                    spectrumFileTypes.put(spectrumName, "_uncalibrated.mgf");
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
-                }
-
-            } else if (spectralFilePath.toLowerCase().endsWith("mzml")){
-                addOneMzML(spectrumName, spectralFilePath);
-
-            } else if (spectralFilePath.toLowerCase().endsWith("mzxml")){
-                //Will do
-            }
-        }
-    }
-
-    private void addOneMzML(String spectrumName, String spectralFilePath){
-        MZMLFile mzmlFile = new MZMLFile(spectralFilePath);
-        mzmlFile.setNumThreadsForParsing(threadsNumber);
-        ScanCollectionDefault scans = new ScanCollectionDefault();
-        scans.setDefaultStorageStrategy(StorageStrategy.SOFT);
-        scans.isAutoloadSpectra(true);
-        scans.setDataSource(mzmlFile);
-        try {
-            scans.loadData(LCMSDataSubset.STRUCTURE_ONLY);
-            scansFileHashMap.put(spectrumName, scans);
-        } catch (Exception e) {
-            progressDialog.setRunFinished();
-            e.printStackTrace();
-        }
-        spectrumFileTypes.put(spectrumName, "mzml");
     }
 
     private void processTable() throws SQLException, IOException, ClassNotFoundException {
@@ -1389,12 +1292,12 @@ public class ImportData {
         return spectrumFileTypes;
     }
 
-    public SpectrumFactory getSpectrumFactory() {
-        return spectrumFactory;
+    public Boolean getHasPredictionSpectra() {
+        return hasPredictionSpectra;
     }
 
-    public ArrayList<String> getMgfFiles() {
-        return mgfFiles;
+    public ArrayList<String> getExpInformation() {
+        return expInformation;
     }
 
     public HashMap<String, PredictionEntry> getPredictionEntryHashMap() {
