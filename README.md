@@ -24,12 +24,3 @@ The FP-PDV has already been released together with FragPipe. However, the latest
 
 ![image](https://user-images.githubusercontent.com/29800230/207643850-8514ac00-ca6c-4173-80eb-b829798fc49d.png)
 
-### Run in CMD
-
-If you want to run FP-PDV outside the FragPipe, you can run it by command line.
-
-```sh
- $ java -jar FP-PDV-1.0.5.jar fragpipe_result_folder 6
-```
-
-The first parameter is the absolute path of your FragPipe result folder. The second parameter is the number of threads you want to use.
