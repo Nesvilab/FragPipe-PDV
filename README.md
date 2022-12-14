@@ -4,7 +4,7 @@ FP-PDV is a customized version of PDV for FragPipe. I changed the GUI layout, op
 
 ## Installation
 
-The FP-PDV packages are free to download at []
+The FP-PDV packages are free to download at [https://github.com/Nesvilab/FP-PDV/releases](https://github.com/Nesvilab/FP-PDV/releases).
 
 ## Ways to run
 
