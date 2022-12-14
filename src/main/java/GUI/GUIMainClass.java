@@ -3568,17 +3568,17 @@ public class GUIMainClass extends JFrame {
                 mgfFiles.add(spectralFilePath);
                 spectrumFileTypes.put(spectrumName, "mgf");
             } else if (spectralFilePath.endsWith("raw")){
-                if (new File(spectralFilePath.replace(".raw", "_calibrated.mgf")).exists()){
-                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_calibrated.mzml"));
-                } else {
+                if (new File(spectralFilePath.replace(".raw", "_uncalibrated.mzml")).exists()){
                     addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_uncalibrated.mzml"));
+                } else {
+                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_calibrated.mzml"));
                 }
 
             } else if (spectralFilePath.endsWith(".d")){
-                if (new File(spectralFilePath.replace(".d", "_calibrated.mgf")).exists()){
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
+                if (new File(spectralFilePath.replace(".d", "__uncalibrated.mzml")).exists()){
+                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "__uncalibrated.mzml"));
                 } else {
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
+                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
                 }
 
             } else if (spectralFilePath.toLowerCase().endsWith("mzml")){

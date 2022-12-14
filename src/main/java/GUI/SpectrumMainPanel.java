@@ -1386,42 +1386,44 @@ public class SpectrumMainPanel extends JPanel {
                         } else {
                             for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
                                 if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
-                                    DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
-                                    parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
+                                    if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
+                                        DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
+                                        parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
+                                    }
                                 }
                             }
                         }
-                        progressDialog.setRunFinished();
-                        updateSpectrum();
+                        //updateSpectrum();
                     } catch (Exception e){
                         progressDialog.setRunFinished();
                         JOptionPane.showMessageDialog(
                                 parentFrame, "Failed to load predicted spectra, please check it.",
                                 "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
                     }
+                    progressDialog.setRunFinished();
+                    showPredictionJMenuItemActionPerformed(null);
                 }
             }.start();
         }
+            mainShowJPanel.removeAll();
+            GroupLayout mainShowJPanelLayout = new GroupLayout(mainShowJPanel);
+            mainShowJPanel.setLayout(mainShowJPanelLayout);
 
-        mainShowJPanel.removeAll();
-        GroupLayout mainShowJPanelLayout = new GroupLayout(mainShowJPanel);
-        mainShowJPanel.setLayout(mainShowJPanelLayout);
+            mainShowJPanelLayout.setHorizontalGroup(
+                    mainShowJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                            .addComponent(predictionJLayeredPane, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+            );
+            mainShowJPanelLayout.setVerticalGroup(
+                    mainShowJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                            .addComponent(predictionJLayeredPane, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+            );
+            mainShowJPanel.revalidate();
+            mainShowJPanel.repaint();
+            splitterMenu7.setVisible(false);
+            checkFileMenu.setVisible(false);
+            peptideCheckMenu.setVisible(false);
 
-        mainShowJPanelLayout.setHorizontalGroup(
-                mainShowJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(predictionJLayeredPane, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-        );
-        mainShowJPanelLayout.setVerticalGroup(
-                mainShowJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(predictionJLayeredPane, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-        );
-        mainShowJPanel.revalidate();
-        mainShowJPanel.repaint();
-        splitterMenu7.setVisible(false);
-        checkFileMenu.setVisible(false);
-        peptideCheckMenu.setVisible(false);
-
-        updateSpectrum();
+            updateSpectrum();
     }
 
     private MSnSpectrum getPredictSpectrum(){
