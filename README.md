@@ -24,3 +24,8 @@ The FP-PDV has already been released together with FragPipe. However, the latest
 
 ![image](https://user-images.githubusercontent.com/29800230/207643850-8514ac00-ca6c-4173-80eb-b829798fc49d.png)
 
+## Citation
+
+To cite the `PDV` package in publications, please use:
+
+Li, K., et al. "PDV: an integrative proteomics data viewer." Bioinformatics, Volume 35, Issue 7, 01 April 2019, Pages 1249–1251. [https://doi.org/10.1093/bioinformatics/bty770](https://doi.org/10.1093/bioinformatics/bty770)
