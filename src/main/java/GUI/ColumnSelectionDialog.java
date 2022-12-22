@@ -50,10 +50,10 @@ public class ColumnSelectionDialog extends JDialog{
         this.guiMainClass = guiMainClass;
         this.proteinOrPSM = proteinOrPSM;
         if (proteinOrPSM){
-            setLocationRelativeTo(guiMainClass.proteinSortColumnJCombox);
+            setLocationRelativeTo(guiMainClass.locationJLabelProtein);
             this.columnToSelected = guiMainClass.proteinColumnToSelected;
         } else {
-            setLocationRelativeTo(guiMainClass.psmSortColumnJCombox);
+            setLocationRelativeTo(guiMainClass.locationJLabelPSM);
             this.columnToSelected = guiMainClass.pSMColumnToSelected;
         }
 
@@ -183,11 +183,24 @@ public class ColumnSelectionDialog extends JDialog{
                     spectrumJTable.getColumn(key).setMinWidth(0);
                     spectrumJTable.getColumn(key).setMaxWidth(0);
                 } else {
-                    for (int i = 0; i < 2; i++) {
-                        spectrumJTable.getColumn(key).setPreferredWidth(70);
-                        spectrumJTable.getColumn(key).setMinWidth(20);
-                        spectrumJTable.getColumn(key).setMaxWidth(400);
+                    if (proteinOrPSM){
+                        for (int i = 0; i < 2; i++) {
+                            spectrumJTable.getColumn(key).setPreferredWidth(125);
+                            spectrumJTable.getColumn(key).setMinWidth(20);
+                            spectrumJTable.getColumn(key).setMaxWidth(400);
+                            spectrumJTable.getColumn("Selected").setMinWidth(30);
+                            spectrumJTable.getColumn("Selected").setMaxWidth(70);
+                            spectrumJTable.getColumn("Experiment").setPreferredWidth(70);
+                            spectrumJTable.getColumn("Experiment").setMinWidth(50);
+                            spectrumJTable.getColumn("Experiment").setMaxWidth(100);
+                        }
+                    } else {
+                        for (int i = 0; i < 2; i++) {
+                            spectrumJTable.getColumn(key).setPreferredWidth(70);
+                            spectrumJTable.getColumn(key).setMinWidth(20);
+                            spectrumJTable.getColumn(key).setMaxWidth(400);
 
+                        }
                     }
                 }
             }

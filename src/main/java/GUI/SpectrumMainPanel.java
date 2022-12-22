@@ -680,6 +680,7 @@ public class SpectrumMainPanel extends JPanel {
 
         switchPaneMenu.add(showPredictionJMenuItem);
 
+        changeModificationJMenuItem.setEnabled(false); // For pre-release
         changeModificationJMenuItem.setText("Change Modifications");
         changeModificationJMenuItem.setFont(menuFont);
         changeModificationJMenuItem.addActionListener(this::changeModificationJMenuItemAction);
@@ -1464,30 +1465,41 @@ public class SpectrumMainPanel extends JPanel {
             return null;
         }
     }
-    
 
     private void changeModificationJMenuItemAction(ActionEvent evt){
         PeptideAssumption peptideAssumption = (PeptideAssumption) spectrumIdentificationAssumption;
         Peptide currentPeptide = peptideAssumption.getPeptide();
         if (!parentFrame.newDefinedMods.containsKey(selectedPsmKey)){
-            HashMap<Integer, Double[]> oneHash = new HashMap<>();
+            HashMap<Integer, double[]> oneHash = new HashMap<>();
             for (ModificationMatch modificationMatch : currentPeptide.getModificationMatches()) {
                 String name = modificationMatch.getTheoreticPtm();
-                Double[] oneMod = new Double[2];
+                double[] oneMod = new double[5];
                 oneMod[0] = ptmFactory.getPTM(name).getMass();
                 oneMod[1] = ptmFactory.getPTM(name).getMass();
+                oneMod[3] = 0.0;
+                oneMod[4] = 1.0;
                 if (name.contains("N-term")){
                     oneHash.put(0, oneMod);
+                    oneMod[2] = 0;
                 } else if (name.contains("C-term")){
                     oneHash.put(currentPeptide.getSequence().length() + 1, oneMod);
+                    oneMod[2] = currentPeptide.getSequence().length() + 1;
                 } else {
                     oneHash.put(modificationMatch.getModificationSite(), oneMod);
+                    oneMod[2] = modificationMatch.getModificationSite();
                 }
             }
+            double[] oneMod = new double[5];
+            oneMod[0] = parentFrame.deltaMass;
+            oneMod[1] = parentFrame.deltaMass;
+            oneMod[2] = -1;
+            oneMod[3] = 0.0;
+            oneMod[4] = -1.0;
+            oneHash.put(-1, oneMod);
             parentFrame.newDefinedMods.put(selectedPsmKey, oneHash);
         }
 
-        new NewDefinedModificationDialog(this, parentFrame.newDefinedMods.get(selectedPsmKey), currentPeptide.getSequence(), selectedPsmKey);
+        new NewDefinedModificationDialog(this, parentFrame.newDefinedMods.get(selectedPsmKey), currentPeptide.getSequence(), selectedPsmKey, parentFrame.modChangeGlobalMap);
 
         parentFrame.updateSpectrum(currentPeptide.getSequence());
     }
@@ -2417,6 +2429,7 @@ public class SpectrumMainPanel extends JPanel {
         Peptide currentPeptide = peptideAssumption.getPeptide();
 
         for (ModificationMatch modificationMatch :currentPeptide.getModificationMatches()){
+//            System.out.println(modificationMatch.getTheoreticPtm());
             if ((modificationMatch.getTheoreticPtm().split(" of ")[1]).equals("N")
                     && (modificationMatch.getTheoreticPtm().equals("203.079 of N") || modificationMatch.getTheoreticPtm().equals("0.0 of N")
                     || Double.parseDouble(modificationMatch.getTheoreticPtm().split(" of")[0]) > 500)){

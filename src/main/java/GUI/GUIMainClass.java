@@ -10,9 +10,11 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,9 +89,11 @@ public class GUIMainClass extends JFrame {
     private JTextField proteinPageSelectNumJTextField;
     private JCheckBox pSMAllSelectedJCheckBox;
     private JCheckBox proteinAllSelectedJCheckBox;
-    public JComboBox psmSortColumnJCombox;
-    public JComboBox proteinSortColumnJCombox;
+    private JComboBox psmSortColumnJCombox;
+    private JComboBox proteinSortColumnJCombox;
     private JComboBox searchTypeComboBox;
+    public JLabel locationJLabelProtein;
+    public JLabel locationJLabelPSM;
 //    private String[] searchType = new String[]{"Peptide (String)","Spectrum (String)", "Peptide (File)", "Spectrum (File)", "Protein (String)", "Protein (File)"};
     private String[] searchType = new String[]{"Peptide (String)","Spectrum (String)", "Protein (String)"};
 
@@ -324,11 +328,19 @@ public class GUIMainClass extends JFrame {
     /**
      *
      */
-    public HashMap<String, HashMap<Integer, Double[]>> newDefinedMods = new HashMap<>();
+    public HashMap<String, HashMap<Integer, double[]>> newDefinedMods = new HashMap<>();
+    /**
+     *
+     */
+    public HashMap<String, Object[]> modChangeGlobalMap = new HashMap<>();
     /**
      *
      */
     private HashMap<String, SpectrumMatch> newDefinedModsMatch = new HashMap<>();
+    /**
+     *
+     */
+    public Double deltaMass = 0.0;
     /**
      * All modifications
      */
@@ -406,6 +418,8 @@ public class GUIMainClass extends JFrame {
      * Set spectrum table tooltips
      */
     private void setUpTableHeaderToolTips() {
+        proteinsJTable.setAutoCreateRowSorter(true);
+        spectrumJTable.setAutoCreateRowSorter(true);
         spectrumJTableToolTips = new ArrayList<>();
         spectrumJTableToolTips.add("Select it and output");
         spectrumJTableToolTips.add("Key of spectrum in Identification File");
@@ -494,6 +508,8 @@ public class GUIMainClass extends JFrame {
         searchTextOrButtonJPanel = new JPanel();
         coveragePaintPanel = new JPanel();
         coverageScrollPane = new JScrollPane();
+        locationJLabelProtein = new JLabel("                                                                   ");
+        locationJLabelPSM = new JLabel("                                                                   ");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setTitle("FragPipe-PDV");
@@ -883,10 +899,9 @@ public class GUIMainClass extends JFrame {
         coverageJPanel.setLayout(coverageLayeredPanelLayout);
         coverageLayeredPanelLayout.setHorizontalGroup(
                 coverageLayeredPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-
                         .addGroup(coverageLayeredPanelLayout.createSequentialGroup()
                                 .addContainerGap()
-                                .addComponent(coverageScrollPane, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(coverageScrollPane, 200, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addContainerGap())
         );
         coverageLayeredPanelLayout.setVerticalGroup(
@@ -981,6 +996,8 @@ public class GUIMainClass extends JFrame {
         proteinsScrollPane.setBackground(Color.WHITE);
         proteinsScrollPane.setViewportView(proteinsJTable);
         proteinsScrollPane.setOpaque(false);
+        proteinsScrollPane.setHorizontalScrollBarPolicy(30);
+        proteinsJTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         proteinsJTable.getAccessibleContext().setAccessibleName("proteinJTable");
         proteinsJTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         proteinsJTable.addMouseListener(new MouseAdapter() {
@@ -1011,6 +1028,7 @@ public class GUIMainClass extends JFrame {
                         .addGroup(proteinsLayeredPanelLayout.createSequentialGroup()
                                 .addComponent(showAllSelectedProteinsJButton)
                                 .addGap(100,1200,2000)
+                                .addComponent(locationJLabelProtein)
                                 .addComponent(proteinSortColumnJCombox)
                                 .addComponent(proteinUpSortJButton)
                                 .addComponent(proteinDownSortJButton)
@@ -1032,6 +1050,7 @@ public class GUIMainClass extends JFrame {
                         .addGroup(proteinsLayeredPanelLayout.createSequentialGroup()
                                 .addGroup(proteinsLayeredPanelLayout.createParallelGroup()
                                         .addComponent(showAllSelectedProteinsJButton)
+                                        .addComponent(locationJLabelProtein)
                                         .addComponent(proteinSortColumnJCombox)
                                         .addComponent(proteinUpSortJButton)
                                         .addComponent(proteinDownSortJButton)
@@ -1082,6 +1101,8 @@ public class GUIMainClass extends JFrame {
         psmsScrollPane.setBackground(Color.WHITE);
         psmsScrollPane.setViewportView(spectrumJTable);
         psmsScrollPane.setOpaque(false);
+        psmsScrollPane.setHorizontalScrollBarPolicy(30);
+        spectrumJTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         spectrumJTable.getAccessibleContext().setAccessibleName("spectrumJTable");
 
         psmsJPanel.setOpaque(false);
@@ -1169,6 +1190,7 @@ public class GUIMainClass extends JFrame {
                         .addGroup(psmsLayeredPanelLayout.createSequentialGroup()
                                 .addComponent(exportSelectedJButton)
                                 .addGap(100,1200,2000)
+                                .addComponent(locationJLabelPSM)
                                 .addComponent(psmSortColumnJCombox)
                                 .addComponent(psmUpSortJButton)
                                 .addComponent(psmDownSortJButton)
@@ -1190,6 +1212,7 @@ public class GUIMainClass extends JFrame {
                         .addGroup(psmsLayeredPanelLayout.createSequentialGroup()
                                 .addGroup(psmsLayeredPanelLayout.createParallelGroup()
                                         .addComponent(exportSelectedJButton)
+                                        .addComponent(locationJLabelPSM)
                                         .addComponent(psmSortColumnJCombox)
                                         .addComponent(psmUpSortJButton)
                                         .addComponent(psmDownSortJButton)
@@ -2376,6 +2399,7 @@ public class GUIMainClass extends JFrame {
             this.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
             selectedPsmKey = (String) spectrumJTable.getValueAt(row, 1);
+            deltaMass = (Double) spectrumJTable.getValueAt(row,psmScoreName.indexOf("DeltaMass") + 8);
 
             try {
                 if (newDefinedModsMatch.containsKey(selectedPsmKey)){
@@ -2383,6 +2407,7 @@ public class GUIMainClass extends JFrame {
                 } else {
                     spectrumMatch = sqliteConnection.getSpectrumMatch(selectedPsmKey);
                 }
+                updateSpectrumMatchGlobalMod();
                 String spectrumTitle =  sqliteConnection.getSpectrumOldTitle(selectedPsmKey);
                 checkSpectrumFactory(spectrumTitle.split("\\.")[0]);
 
@@ -2428,13 +2453,15 @@ public class GUIMainClass extends JFrame {
 
             if (row != -1) {
                 selectedPsmKey = (String) spectrumJTable.getValueAt(row, 1);
+                deltaMass = (Double) spectrumJTable.getValueAt(row,psmScoreName.indexOf("DeltaMass") + 8);
 
-               try {
+                try {
                    if (newDefinedModsMatch.containsKey(selectedPsmKey)){
                        spectrumMatch = newDefinedModsMatch.get(selectedPsmKey);
                    } else {
                        spectrumMatch = sqliteConnection.getSpectrumMatch(selectedPsmKey);
                    }
+                   updateSpectrumMatchGlobalMod();
                    String spectrumTitle =  sqliteConnection.getSpectrumOldTitle(selectedPsmKey);
                    checkSpectrumFactory(spectrumTitle.split("\\.")[0]);
 
@@ -3304,26 +3331,32 @@ public class GUIMainClass extends JFrame {
                     ModificationMatch newMod;
                     double oldMass = newDefinedMods.get(selectedPsmKey).get(eachIndex)[0];
                     double newMass = newDefinedMods.get(selectedPsmKey).get(eachIndex)[1];
+                    double lossMass = newDefinedMods.get(selectedPsmKey).get(eachIndex)[3];
+                    double massType = newDefinedMods.get(selectedPsmKey).get(eachIndex)[4];
+                    int newAAPos = (int) newDefinedMods.get(selectedPsmKey).get(eachIndex)[2];
                     String singleModificationName;
                     String aaName;
-                    if (eachIndex == 0){
-                        aaName = "N-term";
-                        eachIndex = 1;
-                    } else if (eachIndex == spectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length() + 1){
-                        aaName = "C-term";
-                        eachIndex = spectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length();
-                    } else {
-                        aaName = String.valueOf(peptideSequence.charAt(eachIndex-1));
-                    }
-                    if (!Objects.equals(oldMass, newMass)){
-                        singleModificationName = checkReporter(newMass, aaName);
-                    }
-                    else {
-                        singleModificationName = checkReporter(oldMass, aaName);
-                    }
+                    if (newAAPos != -1){
+                        eachIndex = newAAPos;
+                        if (eachIndex == 0){
+                            aaName = "N-term";
+                            eachIndex = 1;
+                        } else if (eachIndex == spectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length() + 1){
+                            aaName = "C-term";
+                            eachIndex = spectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length();
+                        } else {
+                            aaName = String.valueOf(peptideSequence.charAt(eachIndex-1));
+                        }
+                        if (!Objects.equals(oldMass, newMass)){
+                            singleModificationName = checkReporter(newMass, aaName);
+                        }
+                        else {
+                            singleModificationName = checkReporter(oldMass, aaName);
+                        }
 
-                    newMod = new ModificationMatch(singleModificationName, true, eachIndex);
-                    utilitiesModifications.add(newMod);
+                        newMod = new ModificationMatch(singleModificationName, true, eachIndex);
+                        utilitiesModifications.add(newMod);
+                    }
                 }
                 spectrumMatch.getBestPeptideAssumption().getPeptide().setModificationMatches(utilitiesModifications);
                 newDefinedModsMatch.put(selectedPsmKey, spectrumMatch);
@@ -3335,6 +3368,37 @@ public class GUIMainClass extends JFrame {
         } catch (SQLException | FileParsingException | MzMLUnmarshallerException | IOException e ) {
             e.printStackTrace();
         }
+    }
+
+    private void updateSpectrumMatchGlobalMod(){
+        ArrayList<ModificationMatch> newMods = new ArrayList<>();
+        ArrayList<ModificationMatch> allMods = spectrumMatch.getBestPeptideAssumption().getPeptide().getModificationMatches();
+        ModificationMatch newMod;
+        String aa;
+        String newName;
+        ArrayList<String> residues;
+        for (ModificationMatch eachMod : allMods){
+            if (modChangeGlobalMap.containsKey(eachMod.getTheoreticPtm())){
+                if ((Boolean) modChangeGlobalMap.get(eachMod.getTheoreticPtm())[0]){
+                    aa = eachMod.getTheoreticPtm().split(" of ")[1];
+                    newName = ((String) modChangeGlobalMap.get(eachMod.getTheoreticPtm())[1]).split("_")[0];
+                    newMod = new ModificationMatch(newName + " of " + aa, true, eachMod.getModificationSite());
+                    newMods.add(newMod);
+
+                    residues = new ArrayList<>();
+                    residues.add(aa);
+                    PTM ptm = new PTM(PTM.MODAA, newName + " of " + aa, Double.valueOf(newName), residues);
+                    ptm.setShortName(newName);
+                    ptmFactory.addUserPTM(ptm);
+                } else {
+                    newMods.add(eachMod);
+                }
+            } else {
+                newMods.add(eachMod);
+            }
+        }
+        spectrumMatch.getBestPeptideAssumption().getPeptide().clearModificationMatches();
+        spectrumMatch.getBestPeptideAssumption().getPeptide().setModificationMatches(newMods);
     }
 
     private String checkReporter(Double modMass, String modAA){
@@ -3377,7 +3441,7 @@ public class GUIMainClass extends JFrame {
         titledBorder.setTitleColor(Color.black);
         if (newDefinedMods.containsKey(selectedPsmKey)){
             for (int eachIndex : newDefinedMods.get(selectedPsmKey).keySet()){
-                if (!Objects.equals(newDefinedMods.get(selectedPsmKey).get(eachIndex)[0], newDefinedMods.get(selectedPsmKey).get(eachIndex)[1])){
+                if (!Objects.equals(newDefinedMods.get(selectedPsmKey).get(eachIndex)[0], newDefinedMods.get(selectedPsmKey).get(eachIndex)[1]) || eachIndex != newDefinedMods.get(selectedPsmKey).get(eachIndex)[2]){
                     modSequence += "Mod Changed!";
                     titledBorder = BorderFactory.createTitledBorder(modSequence + " \t ");
                     titledBorder.setTitleColor(Color.red);
@@ -3575,8 +3639,8 @@ public class GUIMainClass extends JFrame {
                 }
 
             } else if (spectralFilePath.endsWith(".d")){
-                if (new File(spectralFilePath.replace(".d", "__uncalibrated.mzml")).exists()){
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "__uncalibrated.mzml"));
+                if (new File(spectralFilePath.replace(".d", "_uncalibrated.mzml")).exists()){
+                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
                 } else {
                     addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
                 }
@@ -3632,12 +3696,13 @@ public class GUIMainClass extends JFrame {
 
         proteinsJTable.getColumn("Selected").setMinWidth(30);
         proteinsJTable.getColumn("Selected").setMaxWidth(50);
+        proteinsJTable.getColumn("Experiment").setPreferredWidth(50);
         proteinsJTable.getColumn("Experiment").setMinWidth(50);
         proteinsJTable.getColumn("Experiment").setMaxWidth(100);
-        proteinsJTable.getColumn("Protein").setMinWidth(50);
-        proteinsJTable.getColumn("Protein").setMaxWidth(300);
-        proteinsJTable.getColumn("ProteinDescription").setMinWidth(50);
-        proteinsJTable.getColumn("ProteinDescription").setMaxWidth(500);
+//        proteinsJTable.getColumn("Protein").setMinWidth(100);
+//        proteinsJTable.getColumn("Protein").setMaxWidth(300);
+//        proteinsJTable.getColumn("ProteinDescription").setMinWidth(50);
+//        proteinsJTable.getColumn("ProteinDescription").setMaxWidth(500);
         proteinsJTable.getColumn("EXP:Protein").setMinWidth(0);
         proteinsJTable.getColumn("EXP:Protein").setMaxWidth(0);
 
@@ -3675,9 +3740,14 @@ public class GUIMainClass extends JFrame {
                 proteinsJTable.getColumn(key).setMaxWidth(0);
             } else {
                 for (int i = 0; i < 2; i++) {
-                    proteinsJTable.getColumn(key).setPreferredWidth(70);
+                    proteinsJTable.getColumn(key).setPreferredWidth(125);
                     proteinsJTable.getColumn(key).setMinWidth(20);
                     proteinsJTable.getColumn(key).setMaxWidth(400);
+                    proteinsJTable.getColumn("Selected").setMinWidth(30);
+                    proteinsJTable.getColumn("Selected").setMaxWidth(70);
+                    proteinsJTable.getColumn("Experiment").setPreferredWidth(70);
+                    proteinsJTable.getColumn("Experiment").setMinWidth(50);
+                    proteinsJTable.getColumn("Experiment").setMaxWidth(100);
                 }
             }
         }

@@ -41,10 +41,11 @@ public class ModificationDialogForNew extends JDialog {
      * @param newDefinedModificationDialog Parent class
      * @param aaName aa name
      */
-    public ModificationDialogForNew(NewDefinedModificationDialog newDefinedModificationDialog, String aaName){
+    public ModificationDialogForNew(NewDefinedModificationDialog newDefinedModificationDialog, String aaName, String firstMass){
         super(newDefinedModificationDialog, true);
         this.newDefinedModificationDialog = newDefinedModificationDialog;
-        this.setLocationRelativeTo(newDefinedModificationDialog);
+        this.setLocation(new Point(newDefinedModificationDialog.getLocation().x+50, newDefinedModificationDialog.getLocation().y+50));
+//        this.setLocationRelativeTo(newDefinedModificationDialog);
         this.aaName = aaName;
 
         getModification();
@@ -59,11 +60,15 @@ public class ModificationDialogForNew extends JDialog {
         }
         Collections.sort(singleModifications);
 
-        this.singleModificationsArray = singleModifications.toArray(new String[0]);
+        String[] orderMods = singleModifications.toArray(new String[0]);
+        this.singleModificationsArray = new String[orderMods.length + 1];
+        this.singleModificationsArray[0] = firstMass;
+        for (int i = 0; i < orderMods.length; i++)
+            singleModificationsArray[i+1] = orderMods[i];
 
         initComponents();
         this.aAModificationComBox.setRenderer(new AlignedListCellRenderer(0));
-        this.aAModificationComBox.setSelectedItem(null);
+        this.aAModificationComBox.setSelectedIndex(0);
         this.setVisible(true);
     }
 

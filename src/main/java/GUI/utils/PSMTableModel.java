@@ -220,7 +220,14 @@ public class PSMTableModel extends DefaultTableModel {
             case 6:
                 return Integer.class;
             default:
-                return String.class;
+                for (int i = 0; i < getRowCount(); i++) {
+                    if (getValueAt(i, columnIndex) != null) {
+                        return getValueAt(i, columnIndex).getClass();
+                    } else {
+                        return String.class;
+                    }
+                }
         }
+        return String.class;
     }
 }

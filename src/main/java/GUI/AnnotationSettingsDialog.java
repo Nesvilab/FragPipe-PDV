@@ -93,7 +93,7 @@ public class AnnotationSettingsDialog extends JDialog {
         annotatedPeakWidthJSpinner.setValue(utilitiesUserPreferences.getSpectrumAnnotatedPeakWidth());
         backgroundPeakWidthJSpinner.setValue(utilitiesUserPreferences.getSpectrumBackgroundPeakWidth());
 
-        System.out.println(annotationSettings.getAnnotationIntensityFilter());
+//        System.out.println(annotationSettings.getAnnotationIntensityFilter());
         limitJSpinner.setValue(annotationSettings.getAnnotationIntensityFilter());
 
         if(searchParameters.getFragmentAccuracyType() ==  SearchParameters.MassAccuracyType.DA){

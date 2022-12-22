@@ -28,6 +28,7 @@ import javax.sql.rowset.serial.SerialBlob;
 import javax.swing.*;
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -303,9 +304,21 @@ public class ImportData {
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mgf")[0], lineSplit[0]);
             } else if (lineSplit[0].endsWith(".mzML")){
                 String[] fileArr = lineSplit[0].split(pattern);
+                if (lineSplit[0].startsWith("./")){
+                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace("./", System.getProperty("file.separator"));
+                } else if (lineSplit[0].startsWith(".\\")){
+                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace(".\\", System.getProperty("file.separator"));
+                }
+
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzML")[0], lineSplit[0]);
             } else if (lineSplit[0].endsWith(".mzml")){
                 String[] fileArr = lineSplit[0].split(pattern);
+                if (lineSplit[0].startsWith("./")){
+                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace("./", System.getProperty("file.separator"));
+                } else if (lineSplit[0].startsWith(".\\")){
+                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace(".\\", System.getProperty("file.separator"));
+                }
+
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzml")[0], lineSplit[0]);
             } else if (lineSplit[0].endsWith(".raw")){
                 String[] fileArr = lineSplit[0].split(pattern);
@@ -1072,13 +1085,15 @@ public class ImportData {
                 psmIndexToName.put(i, header.trim().replace(" ", ""));
                 assignenModIndex = i;
             } else {
-                String columnName = header.trim().replace(" ", "");
-                if (columnName.matches(".*\\d+.*")){
+                if (!header.equals("NA")){
+                    String columnName = header.trim().replace(" ", "");
+                    if (columnName.matches(".*\\d+.*")){
 
-                    columnName = "'" + columnName + "'";
+                        columnName = "'" + columnName + "'";
+                    }
+                    columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
+                    psmIndexToName.put(i, columnName);
                 }
-                columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
-                psmIndexToName.put(i, columnName);
             }
         }
 
