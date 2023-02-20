@@ -221,7 +221,7 @@ public class PSMTableModel extends DefaultTableModel {
                 return Integer.class;
             default:
                 for (int i = 0; i < getRowCount(); i++) {
-                    if (getValueAt(i, columnIndex) != null) {
+                    if (getValueAt(i, columnIndex) != null && !getColumnName(columnIndex).contains("BestLocalization")) {
                         return getValueAt(i, columnIndex).getClass();
                     } else {
                         return String.class;

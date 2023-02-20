@@ -1,21 +1,22 @@
 package GUI;
 
 import com.compomics.util.experiment.biology.PTMFactory;
+import com.compomics.util.experiment.biology.Peptide;
 import com.compomics.util.experiment.identification.identification_parameters.PtmSettings;
 import com.compomics.util.experiment.identification.identification_parameters.SearchParameters;
+import com.compomics.util.experiment.identification.matches.ModificationMatch;
 import it.unimi.dsi.fastutil.doubles.Double2LongArrayMap;
 import no.uib.jsparklines.renderers.JSparklinesColorTableCellRenderer;
 
 import javax.swing.*;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Objects;
+import java.util.*;
 
 public class NewDefinedModificationDialog extends JDialog {
 
@@ -28,11 +29,13 @@ public class NewDefinedModificationDialog extends JDialog {
     /**
      * Modification HashMap
      */
-    private HashMap<Integer, double[]> onePeptideModificationHash;
+    private HashMap<Integer, Object[]> onePeptideModificationHash;
+    private ArrayList<ModificationMatch> modificationMatches;
     /**
      *
      */
     private HashMap<String, Object[]> modChangeGlobalMap = new HashMap<>();
+    private PTMFactory ptmFactory;
     /**
      * Peptide Seq
      */
@@ -53,23 +56,26 @@ public class NewDefinedModificationDialog extends JDialog {
      *
      */
     public String selectedPosAAForDelta = "-1 ";
+    public String lossesString = "";
 
     /**
      *
      * @param spectrumMainPanel
      * @param onePeptideModificationHash
-     * @param peptideSeq
+     * @param peptide
      */
 
-
-    public NewDefinedModificationDialog(SpectrumMainPanel spectrumMainPanel, HashMap<Integer, double[]> onePeptideModificationHash, String peptideSeq, String spectrumKey, HashMap<String, Object[]> modChangeGlobalMap){
+    public NewDefinedModificationDialog(SpectrumMainPanel spectrumMainPanel, HashMap<Integer, Object[]> onePeptideModificationHash,
+                                        Peptide peptide, String spectrumKey, HashMap<String, Object[]> modChangeGlobalMap,
+                                        PTMFactory ptmFactory){
         super(spectrumMainPanel.parentFrame, true);
-
         this.spectrumMainPanel = spectrumMainPanel;
         this.onePeptideModificationHash = onePeptideModificationHash;
         this.modChangeGlobalMap = modChangeGlobalMap;
-        this.peptideSeq = peptideSeq;
+        this.peptideSeq = peptide.getSequence();
+        this.modificationMatches = peptide.getModificationMatches();
         this.spectrumKey = spectrumKey;
+        this.ptmFactory = ptmFactory;
 
         initComponents();
 
@@ -107,6 +113,7 @@ public class NewDefinedModificationDialog extends JDialog {
         modificationJTable.getTableHeader().setFont(new Font("Dialog", 0, 12));
         modificationJTable.setOpaque(false);
         modificationJTable.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+        modificationJTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
         modificationJTable.addMouseListener(new MouseAdapter() {
             public void mouseReleased(MouseEvent evt) {
                 modificationJTableMouseReleased(evt);
@@ -181,10 +188,10 @@ public class NewDefinedModificationDialog extends JDialog {
      */
     private void okJButtonActionPerformed(ActionEvent evt){
 
-        for (int row=0; row < modificationJTable.getRowCount(); row++){
-            int index = (int) modificationJTable.getValueAt(row, 1);
-            onePeptideModificationHash.get(index)[1] = (Double) modificationJTable.getValueAt(row, 5);
-        }
+//        for (int row=0; row < modificationJTable.getRowCount(); row++){
+//            int index = (int) modificationJTable.getValueAt(row, 1);
+//            onePeptideModificationHash.get(index)[1] = modificationJTable.getValueAt(row, 5);
+//        }
 
         spectrumMainPanel.parentFrame.newDefinedMods.put(spectrumKey, onePeptideModificationHash);
 
@@ -233,13 +240,14 @@ public class NewDefinedModificationDialog extends JDialog {
         String aa = modificationJTable.getValueAt(row, 3).toString();
         String oriMass = String.valueOf(modificationJTable.getValueAt(row, 4));
 
-        if (row != -1 && column == 8 ){
+        if (row != -1 && column == 9 ){
             tempMass = (Double) modificationJTable.getValueAt(row, 4);
             onePeptideModificationHash.get(index)[1] = tempMass;
             onePeptideModificationHash.get(index)[2] = index;
+            onePeptideModificationHash.get(index)[3] = modificationJTable.getValueAt(row, 6);
 
-            if ((Boolean)modificationJTable.getValueAt(row, 7)){
-                modChangeGlobalMap.get(oriMass + " of " + aa)[1] = oriMass + "_0.0";
+            if ((Boolean)modificationJTable.getValueAt(row, 8)){
+                modChangeGlobalMap.get(oriMass + " of " + aa)[1] = oriMass;
             }
 
         } else if (row != -1 && column == 5){
@@ -247,23 +255,31 @@ public class NewDefinedModificationDialog extends JDialog {
             new ModificationDialogForNew(this, aa, modificationJTable.getValueAt(row, 5).toString());
             onePeptideModificationHash.get(index)[1] = tempMass;
 
-            if ((Boolean)modificationJTable.getValueAt(row, 7)){
-                modChangeGlobalMap.get(oriMass + " of " + aa)[1] = tempMass + "_" + modificationJTable.getValueAt(row, 6);
+            if ((Boolean)modificationJTable.getValueAt(row, 8)){
+                if (Objects.equals(modificationJTable.getValueAt(row, 7).toString(), " ")){
+                    modChangeGlobalMap.get(oriMass + " of " + aa)[1] = tempMass;
+                } else {
+                    modChangeGlobalMap.get(oriMass + " of " + aa)[1] = tempMass + "_" + modificationJTable.getValueAt(row, 7);
+                }
             }
-
 
         } else if (row == onePeptideModificationHash.size()-1 && (column == 1 || column == 2)){
 
             new AASelectionForDeltaModDialog(this, peptideSeq, selectedPosAAForDelta);
 
-            onePeptideModificationHash.get(index)[2] = Double.parseDouble((selectedPosAAForDelta.split(" ")[0]));
+            onePeptideModificationHash.get(index)[2] = Integer.valueOf(selectedPosAAForDelta.split(" ")[0]);
+            tempMass = (Double) modificationJTable.getValueAt(row, 5);
+            onePeptideModificationHash.get(index)[1] = tempMass;
 
-        } else if (row != onePeptideModificationHash.size()-1 && row != -1 && column == 7){
-
+        } else if (row != onePeptideModificationHash.size()-1 && row != -1 && column == 8){
             if (!modChangeGlobalMap.containsKey(oriMass + " of " + aa)){
                 Object[] values = new Object[2];
                 values[0] = true;
-                values[1] = modificationJTable.getValueAt(row, 5) + "_" + modificationJTable.getValueAt(row, 6);
+                if (Objects.equals(onePeptideModificationHash.get(index)[3], " ")){
+                    values[1] = onePeptideModificationHash.get(index)[1];
+                } else {
+                    values[1] = onePeptideModificationHash.get(index)[1] + "_" + onePeptideModificationHash.get(index)[3];
+                }
 
                 modChangeGlobalMap.put(oriMass + " of " + aa, values);
             } else {
@@ -273,14 +289,35 @@ public class NewDefinedModificationDialog extends JDialog {
                 } else {
                     modChangeGlobalMap.get(oriMass + " of " + aa)[0] = true;
                 }
+                if (Objects.equals(onePeptideModificationHash.get(index)[3], " ")){
+                    modChangeGlobalMap.get(oriMass + " of " + aa)[1] = onePeptideModificationHash.get(index)[1];
+                } else {
+                    modChangeGlobalMap.get(oriMass + " of " + aa)[1] = onePeptideModificationHash.get(index)[1] + "_" + onePeptideModificationHash.get(index)[3];
+                }
             }
-        }
-        if (modChangeGlobalMap.containsKey(oriMass + " of " + aa)){
-            modChangeGlobalMap.get(oriMass + " of " + aa)[1] = modificationJTable.getValueAt(row, 5) + "_" + modificationJTable.getValueAt(row, 6);
+
+        } else if (row != onePeptideModificationHash.size()-1 && (column == 7)){
+            new SetLosses(this, (String) onePeptideModificationHash.get(index)[3]);
+            onePeptideModificationHash.get(index)[3] = lossesString;
         }
 
         modificationJTable.repaint();
         modificationJTable.updateUI();
+    }
+
+    private void modificationJTableEdit(KeyEvent evt){
+        System.out.println("Release key");
+        System.out.println();
+        int row = modificationJTable.getSelectedRow();
+        int column = modificationJTable.getSelectedColumn();
+        int index = (int) modificationJTable.getValueAt(row, 1);
+
+        System.out.println(modificationJTable.getValueAt(row, 6));
+
+        if (row != onePeptideModificationHash.size()-1 && (column == 6)){
+
+            onePeptideModificationHash.get(index)[3] =  modificationJTable.getValueAt(row, 6);;
+        }
     }
 
 
@@ -305,7 +342,7 @@ public class NewDefinedModificationDialog extends JDialog {
 
         @Override
         public int getColumnCount() {
-            return 9;
+            return 10;
         }
 
         @Override
@@ -324,10 +361,12 @@ public class NewDefinedModificationDialog extends JDialog {
                 case 5:
                     return "New Defined";
                 case 6:
-                    return "Mod Loss";
+                    return "Original Loss";
                 case 7:
-                    return "Global";
+                    return "Mod Loss";
                 case 8:
+                    return "Global";
+                case 9:
                     return "Recover";
                 default:
                     return "";
@@ -347,10 +386,10 @@ public class NewDefinedModificationDialog extends JDialog {
 
             String currentAA = "";
             if (index == -1){
-                if (onePeptideModificationHash.get(index)[2] == -1.0){
+                if ((Integer) onePeptideModificationHash.get(index)[2] == -1){
                     currentAA = "";
                 } else {
-                    currentAA = String.valueOf(peptideSeq.charAt((int) (onePeptideModificationHash.get(index)[2]-1)));
+                    currentAA = String.valueOf(peptideSeq.charAt((Integer) onePeptideModificationHash.get(index)[2]-1));
                 }
 
             } else if (index == 0) {
@@ -361,15 +400,38 @@ public class NewDefinedModificationDialog extends JDialog {
                 currentAA = String.valueOf(peptideSeq.charAt(index-1));
             }
 
-            boolean hasGlobal = false;
-            String globalMapKey = onePeptideModificationHash.get(index)[0] + " of " + currentAA;
-            if (modChangeGlobalMap.containsKey(globalMapKey)){
-                hasGlobal = (Boolean) modChangeGlobalMap.get(globalMapKey)[0];
+            double oldMass = 0.0;
+            String oldLoss = " ";
+            for (ModificationMatch modificationMatch : modificationMatches) {
+                String name = modificationMatch.getTheoreticPtm();
+
+                if (currentAA.equals("N-term") && name.contains("N-term")){
+                    oldMass = ptmFactory.getPTM(name).getMass();
+                    if (ptmFactory.getPTM(name).getNeutralLosses().size() != 0){
+                        oldLoss = ptmFactory.getPTM(name).getNeutralLosses().get(0).getComposition().toString();
+                    }
+                } else if (currentAA.equals("C-term") && name.contains("C-term")) {
+                    oldMass = ptmFactory.getPTM(name).getMass();
+                    if (ptmFactory.getPTM(name).getNeutralLosses().size() != 0){
+                        oldLoss = ptmFactory.getPTM(name).getNeutralLosses().get(0).getComposition().toString();
+                    }
+                } else if (modificationMatch.getModificationSite() == (int)onePeptideModificationHash.get(index)[2]){
+                    oldMass = ptmFactory.getPTM(name).getMass();
+                    if (ptmFactory.getPTM(name).getNeutralLosses().size() != 0){
+                        oldLoss = ptmFactory.getPTM(name).getNeutralLosses().get(0).getComposition().toString();
+                    }
+                }
             }
+            if (index == -1) {
+                oldMass = (double) onePeptideModificationHash.get(index)[0];
+                oldLoss = " ";
+            }
+            String globalMapKey = oldMass + " of " + currentAA;
+            boolean hasGlobal = checkGlobal(globalMapKey);
 
             switch (column) {
                 case 0:
-                    if (onePeptideModificationHash.get(index)[4] == 1.0){
+                    if ((int) onePeptideModificationHash.get(index)[4] == 1){
                         return "Mod";
                     } else {
                         return "Delta";
@@ -381,23 +443,37 @@ public class NewDefinedModificationDialog extends JDialog {
                 case 3:
                     return currentAA;
                 case 4:
-                    return onePeptideModificationHash.get(index)[0];
+                    return oldMass;
+
                 case 5:
                     if (hasGlobal){
-                        return Double.valueOf(((String) modChangeGlobalMap.get(globalMapKey)[1]).split("_")[0]);
+                        if (String.valueOf(modChangeGlobalMap.get(globalMapKey)[1]).contains("_")){
+                            onePeptideModificationHash.get(index)[1] = Double.parseDouble(((String) modChangeGlobalMap.get(globalMapKey)[1]).split("_")[0]);
+                            return Double.valueOf(((String) modChangeGlobalMap.get(globalMapKey)[1]).split("_")[0]);
+                        } else {
+                            return modChangeGlobalMap.get(globalMapKey)[1];
+                        }
+
                     } else {
                         return onePeptideModificationHash.get(index)[1];
                     }
                 case 6:
+                    return oldLoss;
+                case 7:
                     if (hasGlobal){
-                        return Double.valueOf(((String) modChangeGlobalMap.get(globalMapKey)[1]).split("_")[1]);
+                        if (String.valueOf(modChangeGlobalMap.get(globalMapKey)[1]).contains("_")){
+                            onePeptideModificationHash.get(index)[3] = (((String) modChangeGlobalMap.get(globalMapKey)[1]).split("_")[1]);
+                            return ((String) modChangeGlobalMap.get(globalMapKey)[1]).split("_")[1];
+                        } else {
+                            return " ";
+                        }
                     } else {
                         return onePeptideModificationHash.get(index)[3];
                     }
-                case 7:
+                case 8:
                     return hasGlobal;
 
-                case 8:
+                case 9:
                     return "Re-Set";
                 default:
                     return "";
@@ -409,7 +485,7 @@ public class NewDefinedModificationDialog extends JDialog {
         public Class getColumnClass(int columnIndex) {
             if(columnIndex == 1){
                 return Integer.class;
-            } else if(columnIndex == 7){
+            } else if(columnIndex == 8){
                 return Boolean.class;
             } else {
                 return Object.class;
@@ -420,6 +496,14 @@ public class NewDefinedModificationDialog extends JDialog {
         public boolean isCellEditable(int rowIndex, int columnIndex) {
             return false;
 
+        }
+
+        private Boolean checkGlobal(String globalMapKey){
+            boolean hasGlobal = false;
+            if (modChangeGlobalMap.containsKey(globalMapKey)){
+                hasGlobal = (Boolean) modChangeGlobalMap.get(globalMapKey)[0];
+            }
+            return hasGlobal;
         }
     }
 

@@ -328,7 +328,7 @@ public class GUIMainClass extends JFrame {
     /**
      *
      */
-    public HashMap<String, HashMap<Integer, double[]>> newDefinedMods = new HashMap<>();
+    public HashMap<String, HashMap<Integer, Object[]>> newDefinedMods = new HashMap<>();
     /**
      *
      */
@@ -340,6 +340,16 @@ public class GUIMainClass extends JFrame {
     /**
      *
      */
+    private ProgressDialogX importNewFileDialog = new ProgressDialogX(true);
+    /**
+     *
+     */
+    private Boolean addNewFile = false;
+    /**
+     *
+     */
+    private String newSpectrumFile = "";
+
     public Double deltaMass = 0.0;
     /**
      * All modifications
@@ -3255,15 +3265,54 @@ public class GUIMainClass extends JFrame {
 
     private void checkSpectrumFactory(String spectrumFileName){
 
-        if (!finishedSpectrumFiles.contains(spectrumFileName)) {
-            if (readFactoryThread.isAlive()) {
-                while (readFactoryThread.isInterrupted()){
-                    readFactoryThread.interrupt();
-                }
+        if (spectrumFileOrder.contains(spectrumFileName)){
+            importNewFileDialog = new ProgressDialogX(this,
+                    Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMass.png")),
+                    Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMassWait.png")),
+                    true);
+            importNewFileDialog.setPrimaryProgressCounterIndeterminate(true);
+            importNewFileDialog.setTitle("Reading spectrum file. Please Wait...");
 
-                updateSpectrumFactory(true, spectrumFileName);
-            }
+            new Thread(() -> {
+                try {
+                    importNewFileDialog.setVisible(true);
+                } catch (IndexOutOfBoundsException ignored) {
+                }
+            }, "ProgressDialog").start();
+            spectrumFileOrder.remove(spectrumFileName);
+            spectrumFileOrder.add(0, spectrumFileName);
+            addNewFile = true;
+            newSpectrumFile = spectrumFileName;
+
+//            updateSpectrumFactory(true, spectrumFileName, progressDialog);
+        } else {
+            addNewFile = false;
+            newSpectrumFile = "";
         }
+//        if (!finishedSpectrumFiles.contains(spectrumFileName)) {
+//            if (readFactoryThread.isAlive()) {
+//                while (readFactoryThread.isInterrupted()){
+//                    readFactoryThread.interrupt();
+//                    System.gc();
+//                }
+//
+//                ProgressDialogX progressDialog = new ProgressDialogX(this,
+//                        Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMass.png")),
+//                        Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMassWait.png")),
+//                        true);
+//                progressDialog.setPrimaryProgressCounterIndeterminate(true);
+//                progressDialog.setTitle("Reading spectrum file. Please Wait...");
+//
+//                new Thread(() -> {
+//                    try {
+//                        progressDialog.setVisible(true);
+//                    } catch (IndexOutOfBoundsException ignored) {
+//                    }
+//                }, "ProgressDialog").start();
+//
+//                updateSpectrumFactory(true, spectrumFileName, progressDialog);
+//            }
+//        }
     }
 
     /**
@@ -3326,38 +3375,51 @@ public class GUIMainClass extends JFrame {
         try {
             ArrayList<ModificationMatch> utilitiesModifications = new ArrayList<>();
             if (newDefinedMods.containsKey(selectedPsmKey)){
-                spectrumMatch.getBestPeptideAssumption().getPeptide().clearModificationMatches();
+                SpectrumMatch oneSpectrumMatch = sqliteConnection.getSpectrumMatch(selectedPsmKey);
                 for (int eachIndex : newDefinedMods.get(selectedPsmKey).keySet()){
                     ModificationMatch newMod;
-                    double oldMass = newDefinedMods.get(selectedPsmKey).get(eachIndex)[0];
-                    double newMass = newDefinedMods.get(selectedPsmKey).get(eachIndex)[1];
-                    double lossMass = newDefinedMods.get(selectedPsmKey).get(eachIndex)[3];
-                    double massType = newDefinedMods.get(selectedPsmKey).get(eachIndex)[4];
+                    double oldMass = (double) newDefinedMods.get(selectedPsmKey).get(eachIndex)[0];
+                    double newMass = (double) newDefinedMods.get(selectedPsmKey).get(eachIndex)[1];
+                    String lossCom = (String) newDefinedMods.get(selectedPsmKey).get(eachIndex)[3];
                     int newAAPos = (int) newDefinedMods.get(selectedPsmKey).get(eachIndex)[2];
                     String singleModificationName;
                     String aaName;
+                    ArrayList<String> residues;
+                    int ptmMode = PTM.MODAA;
                     if (newAAPos != -1){
-                        eachIndex = newAAPos;
-                        if (eachIndex == 0){
+                        if (newAAPos == 0){
                             aaName = "N-term";
-                            eachIndex = 1;
-                        } else if (eachIndex == spectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length() + 1){
+                            newAAPos = 1;
+                            ptmMode = PTM.MODNPAA;
+                        } else if (newAAPos == oneSpectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length()+1){
                             aaName = "C-term";
-                            eachIndex = spectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length();
+                            newAAPos = oneSpectrumMatch.getBestPeptideAssumption().getPeptide().getSequence().length();
+                            ptmMode = PTM.MODCP;
                         } else {
-                            aaName = String.valueOf(peptideSequence.charAt(eachIndex-1));
+                            aaName = String.valueOf(peptideSequence.charAt(newAAPos-1));
                         }
-                        if (!Objects.equals(oldMass, newMass)){
-                            singleModificationName = checkReporter(newMass, aaName);
-                        }
-                        else {
-                            singleModificationName = checkReporter(oldMass, aaName);
+                        if (!Objects.equals(oldMass, newMass) || eachIndex == -1 || !Objects.equals(lossCom, " ")){
+                            singleModificationName = checkReporter(newMass, aaName, lossCom);
+                            residues = new ArrayList<>();
+                            residues.add(aaName);
+                            PTM ptm = new PTM(ptmMode, singleModificationName, newMass, residues);
+                            ptm.setShortName(String.valueOf(newMass));
+                            if (!Objects.equals(lossCom, " ")){
+                                spectrumMainPanel.newDefinedLosses.clear();
+                                NeutralLoss definedLoss = new NeutralLoss(lossCom.replaceAll("\\)", "").replace("(", ""), AtomChain.getAtomChain(lossCom), true);
+                                ptm.addNeutralLoss(definedLoss);
+                                spectrumMainPanel.newDefinedLosses.add(definedLoss);
+                            }
+                            ptmFactory.addUserPTM(ptm);
+                        } else {
+                            singleModificationName = checkReporter(oldMass, aaName, lossCom);
                         }
 
-                        newMod = new ModificationMatch(singleModificationName, true, eachIndex);
+                        newMod = new ModificationMatch(singleModificationName, true, newAAPos);
                         utilitiesModifications.add(newMod);
                     }
                 }
+                spectrumMatch.getBestPeptideAssumption().getPeptide().clearModificationMatches();
                 spectrumMatch.getBestPeptideAssumption().getPeptide().setModificationMatches(utilitiesModifications);
                 newDefinedModsMatch.put(selectedPsmKey, spectrumMatch);
             } else {
@@ -3372,36 +3434,63 @@ public class GUIMainClass extends JFrame {
 
     private void updateSpectrumMatchGlobalMod(){
         ArrayList<ModificationMatch> newMods = new ArrayList<>();
-        ArrayList<ModificationMatch> allMods = spectrumMatch.getBestPeptideAssumption().getPeptide().getModificationMatches();
+        ArrayList<Integer> oldModSites = new ArrayList<>();
+        ArrayList<String> termMod = new ArrayList<>();
+        SpectrumMatch oneSpectrumMatch = null;
+        try {
+            oneSpectrumMatch = sqliteConnection.getSpectrumMatch(selectedPsmKey);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        ArrayList<ModificationMatch> allMods = oneSpectrumMatch.getBestPeptideAssumption().getPeptide().getModificationMatches();
+        ArrayList<ModificationMatch> newAllMods = spectrumMatch.getBestPeptideAssumption().getPeptide().getModificationMatches();
         ModificationMatch newMod;
         String aa;
         String newName;
-        ArrayList<String> residues;
         for (ModificationMatch eachMod : allMods){
             if (modChangeGlobalMap.containsKey(eachMod.getTheoreticPtm())){
                 if ((Boolean) modChangeGlobalMap.get(eachMod.getTheoreticPtm())[0]){
                     aa = eachMod.getTheoreticPtm().split(" of ")[1];
-                    newName = ((String) modChangeGlobalMap.get(eachMod.getTheoreticPtm())[1]).split("_")[0];
+                    newName = String.valueOf(modChangeGlobalMap.get(eachMod.getTheoreticPtm())[1]);
                     newMod = new ModificationMatch(newName + " of " + aa, true, eachMod.getModificationSite());
                     newMods.add(newMod);
-
-                    residues = new ArrayList<>();
-                    residues.add(aa);
-                    PTM ptm = new PTM(PTM.MODAA, newName + " of " + aa, Double.valueOf(newName), residues);
-                    ptm.setShortName(newName);
-                    ptmFactory.addUserPTM(ptm);
-                } else {
+                    if (aa.contains("term")){
+                        termMod.add(aa);
+                    }
+                    oldModSites.add(eachMod.getModificationSite());
+                }
+//                else {
+//                    newMods.add(eachMod);
+//                }
+            }
+//            else {
+//                newMods.add(eachMod);
+//            }
+        }
+        for (ModificationMatch eachMod : newAllMods){
+            if (eachMod.getTheoreticPtm().split(" of ")[1].contains("term") && !termMod.contains(eachMod.getTheoreticPtm().split(" of ")[1])){
+                newMods.add(eachMod);
+            } else {
+                if (!oldModSites.contains(eachMod.getModificationSite())){
                     newMods.add(eachMod);
                 }
-            } else {
-                newMods.add(eachMod);
             }
+
+//            if (!oldModSites.contains(0)){
+//                if (!oldModSites.contains(eachMod.getModificationSite())){
+//                    newMods.add(eachMod);
+//                }
+//                if (eachMod.getTheoreticPtm().contains("N-term")){
+//                    newMods.add(eachMod);
+//                }
+//            }
+
         }
         spectrumMatch.getBestPeptideAssumption().getPeptide().clearModificationMatches();
         spectrumMatch.getBestPeptideAssumption().getPeptide().setModificationMatches(newMods);
     }
 
-    private String checkReporter(Double modMass, String modAA){
+    private String checkReporter(Double modMass, String modAA, String lossMass){
         if (Objects.equals(modAA, "N-term")){
             // TMT
             if (Math.abs(modMass - 229.1629) <= 0.1){
@@ -3411,6 +3500,9 @@ public class GUIMainClass extends JFrame {
             if (Math.abs(modMass - 144.1) <= 0.1){
                 return "iTRAQ 4-plex of peptide N-term";
             }
+        }
+        if (!Objects.equals(lossMass, " ")){
+            return modMass + "_" + lossMass + " of " + modAA;
         }
         return modMass + " of " + modAA;
     }
@@ -3439,16 +3531,16 @@ public class GUIMainClass extends JFrame {
 
         TitledBorder titledBorder = BorderFactory.createTitledBorder(modSequence + " \t ");
         titledBorder.setTitleColor(Color.black);
-        if (newDefinedMods.containsKey(selectedPsmKey)){
-            for (int eachIndex : newDefinedMods.get(selectedPsmKey).keySet()){
-                if (!Objects.equals(newDefinedMods.get(selectedPsmKey).get(eachIndex)[0], newDefinedMods.get(selectedPsmKey).get(eachIndex)[1]) || eachIndex != newDefinedMods.get(selectedPsmKey).get(eachIndex)[2]){
-                    modSequence += "Mod Changed!";
-                    titledBorder = BorderFactory.createTitledBorder(modSequence + " \t ");
-                    titledBorder.setTitleColor(Color.red);
-                    break;
-                }
-            }
-        }
+//        if (newDefinedMods.containsKey(selectedPsmKey)){
+//            for (int eachIndex : newDefinedMods.get(selectedPsmKey).keySet()){
+//                if (!Objects.equals(newDefinedMods.get(selectedPsmKey).get(eachIndex)[0], newDefinedMods.get(selectedPsmKey).get(eachIndex)[1]) || eachIndex != newDefinedMods.get(selectedPsmKey).get(eachIndex)[2]){
+//                    modSequence += "Mod Changed!";
+//                    titledBorder = BorderFactory.createTitledBorder(modSequence + " \t ");
+//                    titledBorder.setTitleColor(Color.red);
+//                    break;
+//                }
+//            }
+//        }
 
         titledBorder.setTitleFont(new Font("Console", Font.PLAIN, 12));
 
@@ -3543,63 +3635,71 @@ public class GUIMainClass extends JFrame {
                     setUpTableHeaderToolTips();
 
                     updateSpectrumFactoryFirst(progressDialog);
-                    updateSpectrumFactory(false, "");
+                    updateSpectrumFactory();
 
                     displayResults();
 
                 } catch (SQLException | ClassNotFoundException | IOException e) {
                     e.printStackTrace();
+                    System.exit(1);
                 }
             }
         }.start();
     }
 
-    private void updateSpectrumFactory(Boolean addNew, String addOneFile){
-        if (addNew){
-            String spectralFilePath = spectrumFileMap.get(addOneFile);
-
-            if (Files.exists(new File(spectralFilePath).toPath())) {
-                try {
-                    readSpectrumFile(spectralFilePath);
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                JOptionPane.showMessageDialog(
-                        null, "Invalid spectrum file path, please check it.",
-                        "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
-            }
-            finishedSpectrumFiles.add(addOneFile);
-        }
+    private void updateSpectrumFactory(){
+//        if (addNew){
+//            String spectralFilePath = spectrumFileMap.get(addOneFile);
+//
+//            if (Files.exists(new File(spectralFilePath).toPath())) {
+//                try {
+//                    readSpectrumFile(spectralFilePath);
+//                    progressDialog.setRunFinished();
+//                } catch (IOException | ClassNotFoundException e) {
+//                    e.printStackTrace();
+//                }
+//            } else {
+//                JOptionPane.showMessageDialog(
+//                        null, "Invalid spectrum file path, please check it.",
+//                        "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+//                progressDialog.setRunFinished();
+//            }
+//            finishedSpectrumFiles.add(addOneFile);
+//        }
 
         readFactoryThread = new Thread("ImportSpectrum") {
             @Override
             public void run() {
-                for (String eachFileName : spectrumFileOrder){
-                    if (!finishedSpectrumFiles.contains(eachFileName)){
-                        String spectralFilePath = spectrumFileMap.get(eachFileName);
-                        if (Files.exists(new File(spectralFilePath).toPath())) {
-                            loadingJButton.setText(eachFileName);
-//                            try {
-//                                sleep(1000);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-                            try {
-                                readSpectrumFile(spectralFilePath);
-                            } catch (Exception e) {
-                                if (e.getClass() != InterruptedException.class){
-                                    e.printStackTrace();
-                                }
+                while (spectrumFileOrder.size()!=0){
+                    String eachFileName = spectrumFileOrder.get(0);
+                    spectrumFileOrder.remove(eachFileName);
+
+                    String spectralFilePath = spectrumFileMap.get(eachFileName);
+                    if (Files.exists(new File(spectralFilePath).toPath())) {
+                        loadingJButton.setText(eachFileName);
+
+                        try {
+                            readSpectrumFile(spectralFilePath);
+                            if (addNewFile && Objects.equals(newSpectrumFile, eachFileName)){
+                                updateSpectrum(getSpectrum(selectedPsmKey), spectrumMatch);
+                                importNewFileDialog.setRunFinished();
                             }
-                        } else {
-                            JOptionPane.showMessageDialog(
-                                    null, "Invalid spectrum file path, please check it.",
-                                    "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            if (addNewFile){
+                                importNewFileDialog.setRunFinished();
+                            }
                         }
-                        finishedSpectrumFiles.add(eachFileName);
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                null, "Invalid spectrum file path, please check it.",
+                                "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+                        if (addNewFile){
+                            importNewFileDialog.setRunFinished();
+                        }
                     }
                 }
+
                 loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/done.png")));
                 loadingJButton.setText("Import done");
 
@@ -3607,6 +3707,62 @@ public class GUIMainClass extends JFrame {
         };
         readFactoryThread.start();
     }
+
+//    private void updateSpectrumFactory(Boolean addNew, String addOneFile, ProgressDialogX progressDialog){
+//        if (addNew){
+//            String spectralFilePath = spectrumFileMap.get(addOneFile);
+//
+//            if (Files.exists(new File(spectralFilePath).toPath())) {
+//                try {
+//                    readSpectrumFile(spectralFilePath);
+//                    progressDialog.setRunFinished();
+//                } catch (IOException | ClassNotFoundException e) {
+//                    e.printStackTrace();
+//                }
+//            } else {
+//                JOptionPane.showMessageDialog(
+//                        null, "Invalid spectrum file path, please check it.",
+//                        "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+//                progressDialog.setRunFinished();
+//            }
+//            finishedSpectrumFiles.add(addOneFile);
+//        }
+//
+//        readFactoryThread = new Thread("ImportSpectrum") {
+//            @Override
+//            public void run() {
+//                for (String eachFileName : spectrumFileOrder){
+//                    if (!finishedSpectrumFiles.contains(eachFileName)){
+//                        String spectralFilePath = spectrumFileMap.get(eachFileName);
+//                        if (Files.exists(new File(spectralFilePath).toPath())) {
+//                            loadingJButton.setText(eachFileName);
+////                            try {
+////                                sleep(1000);
+////                            } catch (InterruptedException e) {
+////                                e.printStackTrace();
+////                            }
+//                            try {
+//                                readSpectrumFile(spectralFilePath);
+//                            } catch (Exception e) {
+//                                if (e.getClass() != InterruptedException.class){
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                        } else {
+//                            JOptionPane.showMessageDialog(
+//                                    null, "Invalid spectrum file path, please check it.",
+//                                    "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+//                        }
+//                        finishedSpectrumFiles.add(eachFileName);
+//                    }
+//                }
+//                loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/done.png")));
+//                loadingJButton.setText("Import done");
+//
+//            }
+//        };
+//        readFactoryThread.start();
+//    }
 
     private void updateSpectrumFactoryFirst(ProgressDialogX progressDialog) throws IOException, ClassNotFoundException {
         String spectralFilePath = spectrumFileMap.get(spectrumFileOrder.get(0));
@@ -3620,6 +3776,7 @@ public class GUIMainClass extends JFrame {
             progressDialog.setRunFinished();
         }
         finishedSpectrumFiles.add(spectrumFileOrder.get(0));
+        spectrumFileOrder.remove(spectrumFileOrder.get(0));
         progressDialog.setRunFinished();
     }
 
@@ -3953,6 +4110,14 @@ public class GUIMainClass extends JFrame {
             e.printStackTrace();
         }
         return fetchResult;
+    }
+
+    public SpectrumMatch getSpectrumMatch(String selectedPsmKey){
+        try {
+            return sqliteConnection.getSpectrumMatch(selectedPsmKey);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

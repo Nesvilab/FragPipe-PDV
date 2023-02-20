@@ -304,10 +304,10 @@ public class ImportData {
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mgf")[0], lineSplit[0]);
             } else if (lineSplit[0].endsWith(".mzML")){
                 String[] fileArr = lineSplit[0].split(pattern);
-                if (lineSplit[0].startsWith("./")){
-                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace("./", System.getProperty("file.separator"));
-                } else if (lineSplit[0].startsWith(".\\")){
-                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace(".\\", System.getProperty("file.separator"));
+                if (lineSplit[0].startsWith("./") || lineSplit[0].startsWith("../")){
+                    lineSplit[0] = resultsFolder.getAbsolutePath() + System.getProperty("file.separator") + lineSplit[0].replace("/", System.getProperty("file.separator"));
+                } else if (lineSplit[0].startsWith(".\\")|| lineSplit[0].startsWith("..\\")){
+                    lineSplit[0] = resultsFolder.getAbsolutePath() + System.getProperty("file.separator") + lineSplit[0].replace("\\", System.getProperty("file.separator"));
                 }
 
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzML")[0], lineSplit[0]);
@@ -1116,7 +1116,10 @@ public class ImportData {
                 if (columnName.equals("Group")){
                     columnName = "ProteinGroup";
                 }
-                proteinIndexToName.put(i, columnName);
+
+                if (!columnName.equals("NA")){
+                    proteinIndexToName.put(i, columnName);
+                }
             }
         }
 

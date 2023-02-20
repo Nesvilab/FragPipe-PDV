@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.awt.event.WindowEvent;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -165,11 +166,12 @@ public class ModificationDialogForNew extends JDialog {
      */
     private void formWindowClosing(WindowEvent evt) {
 
+        DecimalFormat df = new DecimalFormat("#.000");
         if (modValidation && !selectedModification.equals("null")) {
             if (!userInput) {
-                newDefinedModificationDialog.tempMass = ptmFactory.getPTM(selectedModification).getMass();
+                newDefinedModificationDialog.tempMass = Double.valueOf(df.format(ptmFactory.getPTM(selectedModification).getMass()));
             } else {
-                newDefinedModificationDialog.tempMass = Double.valueOf(selectedModification);
+                newDefinedModificationDialog.tempMass = Double.valueOf(df.format(selectedModification));
             }
         }
         this.dispose();

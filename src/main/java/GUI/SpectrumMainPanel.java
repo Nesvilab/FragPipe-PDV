@@ -10,6 +10,7 @@ import com.compomics.util.experiment.identification.identification_parameters.Pt
 import com.compomics.util.experiment.identification.identification_parameters.SearchParameters;
 import com.compomics.util.experiment.identification.matches.IonMatch;
 import com.compomics.util.experiment.identification.matches.ModificationMatch;
+import com.compomics.util.experiment.identification.matches.SpectrumMatch;
 import com.compomics.util.experiment.identification.spectrum_annotation.AnnotationSettings;
 import com.compomics.util.experiment.identification.spectrum_annotation.SpecificAnnotationSettings;
 import com.compomics.util.experiment.identification.spectrum_annotation.SpectrumAnnotator;
@@ -246,6 +247,7 @@ public class SpectrumMainPanel extends JPanel {
      * lossMenus
      */
     private HashMap<NeutralLoss, JCheckBoxMenuItem> lossMenuMap = new HashMap<>();
+    public ArrayList<NeutralLoss> newDefinedLosses = new ArrayList<>();
     /**
      * Check peptide map
      */
@@ -680,7 +682,7 @@ public class SpectrumMainPanel extends JPanel {
 
         switchPaneMenu.add(showPredictionJMenuItem);
 
-        changeModificationJMenuItem.setEnabled(false); // For pre-release
+        changeModificationJMenuItem.setEnabled(true); // For pre-release
         changeModificationJMenuItem.setText("Change Modifications");
         changeModificationJMenuItem.setFont(menuFont);
         changeModificationJMenuItem.addActionListener(this::changeModificationJMenuItemAction);
@@ -1394,12 +1396,14 @@ public class SpectrumMainPanel extends JPanel {
                                 }
                             }
                         }
+
                         //updateSpectrum();
                     } catch (Exception e){
                         progressDialog.setRunFinished();
                         JOptionPane.showMessageDialog(
-                                parentFrame, "Failed to load predicted spectra, please check it.",
+                                parentFrame, "Failed to load predicted spectra, please check it.\n" + e.toString(),
                                 "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+                        System.exit(-1);
                     }
                     progressDialog.setRunFinished();
                     showPredictionJMenuItemActionPerformed(null);
@@ -1470,14 +1474,18 @@ public class SpectrumMainPanel extends JPanel {
         PeptideAssumption peptideAssumption = (PeptideAssumption) spectrumIdentificationAssumption;
         Peptide currentPeptide = peptideAssumption.getPeptide();
         if (!parentFrame.newDefinedMods.containsKey(selectedPsmKey)){
-            HashMap<Integer, double[]> oneHash = new HashMap<>();
+            HashMap<Integer, Object[]> oneHash = new HashMap<>();
             for (ModificationMatch modificationMatch : currentPeptide.getModificationMatches()) {
                 String name = modificationMatch.getTheoreticPtm();
-                double[] oneMod = new double[5];
+                Object[] oneMod = new Object[5];
                 oneMod[0] = ptmFactory.getPTM(name).getMass();
                 oneMod[1] = ptmFactory.getPTM(name).getMass();
-                oneMod[3] = 0.0;
-                oneMod[4] = 1.0;
+                oneMod[4] = 1;
+                if (ptmFactory.getPTM(name).getNeutralLosses().size() != 0){
+                    oneMod[3] = ptmFactory.getPTM(name).getNeutralLosses().get(0).getComposition().toString();
+                } else {
+                    oneMod[3] = " ";
+                }
                 if (name.contains("N-term")){
                     oneHash.put(0, oneMod);
                     oneMod[2] = 0;
@@ -1489,17 +1497,18 @@ public class SpectrumMainPanel extends JPanel {
                     oneMod[2] = modificationMatch.getModificationSite();
                 }
             }
-            double[] oneMod = new double[5];
+            Object[] oneMod = new Object[5];
             oneMod[0] = parentFrame.deltaMass;
             oneMod[1] = parentFrame.deltaMass;
             oneMod[2] = -1;
-            oneMod[3] = 0.0;
-            oneMod[4] = -1.0;
+            oneMod[3] = " ";
+            oneMod[4] = -1;
             oneHash.put(-1, oneMod);
             parentFrame.newDefinedMods.put(selectedPsmKey, oneHash);
         }
-
-        new NewDefinedModificationDialog(this, parentFrame.newDefinedMods.get(selectedPsmKey), currentPeptide.getSequence(), selectedPsmKey, parentFrame.modChangeGlobalMap);
+        SpectrumMatch oldSpectrumMatch = parentFrame.getSpectrumMatch(selectedPsmKey);
+        new NewDefinedModificationDialog(this, parentFrame.newDefinedMods.get(selectedPsmKey),
+                oldSpectrumMatch.getBestPeptideAssumption().getPeptide(), selectedPsmKey, parentFrame.modChangeGlobalMap, ptmFactory);
 
         parentFrame.updateSpectrum(currentPeptide.getSequence());
     }
@@ -2574,6 +2583,10 @@ public class SpectrumMainPanel extends JPanel {
             if (neutralLoss != null){
                 neutralLossHashMap.put(neutralLoss.name, neutralLoss);
             }
+        }
+
+        if (newDefinedLosses.size() != 0){
+            neutralLossHashMap.put(newDefinedLosses.get(0).name, newDefinedLosses.get(0));
         }
 
         ArrayList<String> neutralLossNameList = new ArrayList<>(neutralLossHashMap.keySet());
