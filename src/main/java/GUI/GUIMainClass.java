@@ -3767,14 +3767,22 @@ public class GUIMainClass extends JFrame {
     private void updateSpectrumFactoryFirst(ProgressDialogX progressDialog) throws IOException, ClassNotFoundException {
         String spectralFilePath = spectrumFileMap.get(spectrumFileOrder.get(0));
 
-        if (Files.exists(new File(spectralFilePath).toPath())) {
-            readSpectrumFile(spectralFilePath);
-        } else {
+        try {
+            if (Files.exists(new File(spectralFilePath).toPath())) {
+                readSpectrumFile(spectralFilePath);
+            } else {
+                JOptionPane.showMessageDialog(
+                        null, "Invalid spectrum file path, please check it.",
+                        "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+                progressDialog.setRunFinished();
+            }
+        } catch (Exception e){
             JOptionPane.showMessageDialog(
                     null, "Invalid spectrum file path, please check it.",
                     "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
             progressDialog.setRunFinished();
         }
+
         finishedSpectrumFiles.add(spectrumFileOrder.get(0));
         spectrumFileOrder.remove(spectrumFileOrder.get(0));
         progressDialog.setRunFinished();
