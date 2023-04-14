@@ -481,9 +481,22 @@ public class ImportData {
                 addData(expNum, oneProteinTable, onePSMTable, onePeptideTable, connection);
             } else {
                 progressDialog.setRunFinished();
-                JOptionPane.showMessageDialog(
-                        null, "The result files are occupied by other programs.",
-                        "Error Parsing File", JOptionPane.ERROR_MESSAGE);
+                if (!checkFileOpen(oneProteinTable)){
+                    JOptionPane.showMessageDialog(
+                            null, "The protein.tsv are occupied by other programs or unavailable now.",
+                            "Error Parsing File", JOptionPane.ERROR_MESSAGE);
+                }
+                if (!checkFileOpen(onePSMTable)){
+                    JOptionPane.showMessageDialog(
+                            null, "The psm.tsv are occupied by other programs or unavailable now.",
+                            "Error Parsing File", JOptionPane.ERROR_MESSAGE);
+                }
+                if (!checkFileOpen(onePeptideTable)){
+                    JOptionPane.showMessageDialog(
+                            null, "The peptide.tsv are occupied by other programs or unavailable now.",
+                            "Error Parsing File", JOptionPane.ERROR_MESSAGE);
+                }
+
             }
 
         }
@@ -1060,6 +1073,9 @@ public class ImportData {
         BufferedReader pSMBufferedReader = new BufferedReader(new FileReader(onePSMTable));
         String[] pSMHeaders = pSMBufferedReader.readLine().trim().split("\t");
 
+        HashMap<String, Integer> psmColumnNames = new HashMap<>(); // Some results have duplicated column names
+        HashMap<String, Integer> proteinColumnNames = new HashMap<>();
+
         for (int i = 0; i < pSMHeaders.length; i++){
 
             String header = pSMHeaders[i];
@@ -1092,6 +1108,13 @@ public class ImportData {
                         columnName = "'" + columnName + "'";
                     }
                     columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
+                    if (psmColumnNames.containsKey(columnName)){
+                        int colCount = psmColumnNames.get(columnName);
+                        columnName = columnName + "_" + ( colCount + 1);
+                        psmColumnNames.put(columnName, colCount + 1);
+                    } else {
+                        psmColumnNames.put(columnName, 0);
+                    }
                     psmIndexToName.put(i, columnName);
                 }
             }
@@ -1118,6 +1141,13 @@ public class ImportData {
                 }
 
                 if (!columnName.equals("NA")){
+                    if (proteinColumnNames.containsKey(columnName)){
+                        int colCount = proteinColumnNames.get(columnName);
+                        columnName = columnName + "_" + (colCount + 1);
+                        proteinColumnNames.put(columnName, colCount + 1);
+                    } else {
+                        proteinColumnNames.put(columnName, 0);
+                    }
                     proteinIndexToName.put(i, columnName);
                 }
             }

@@ -128,7 +128,7 @@ public class GUIMainClass extends JFrame {
     /**
      * Annotation setting
      */
-    private AnnotationSettings annotationSettings = new AnnotationSettings();
+    public AnnotationSettings annotationSettings = new AnnotationSettings();
     /**
      * ExceptionHandler import from utilities
      */
@@ -389,9 +389,9 @@ public class GUIMainClass extends JFrame {
         resultsFolder = new File(resultsPath);
         this.threadsNumber = Integer.parseInt(threadsNumber);
 
-        spectrumMainPanel = new SpectrumMainPanel(this);
-
         initParameters();
+
+        spectrumMainPanel = new SpectrumMainPanel(this);
 
         initComponents();
         setVisible(true);
@@ -420,7 +420,7 @@ public class GUIMainClass extends JFrame {
         searchParameters.setFragmentIonAccuracy(20.0);
 
         annotationSettings.setPreferencesFromSearchParameters(searchParameters);
-        annotationSettings.setFragmentIonAccuracy(20);
+//        annotationSettings.setFragmentIonAccuracy(20);
 
     }
 
@@ -3639,9 +3639,13 @@ public class GUIMainClass extends JFrame {
 
                     displayResults();
 
-                } catch (SQLException | ClassNotFoundException | IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
-                    System.exit(1);
+                    progressDialog.setRunFinished();
+                    JOptionPane.showMessageDialog(
+                            null, e.getMessage(),
+                            "Error Parsing File", JOptionPane.ERROR_MESSAGE);
+//                    System.exit(1);
                 }
             }
         }.start();

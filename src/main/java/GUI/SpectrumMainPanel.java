@@ -295,9 +295,10 @@ public class SpectrumMainPanel extends JPanel {
      */
     public SpectrumMainPanel(GUIMainClass guiMainClass){
         this.searchParameters = guiMainClass.searchParameters;
+        this.annotationSettings = guiMainClass.annotationSettings;
         this.parentFrame = guiMainClass;
 
-        annotationSettings.setFragmentIonAccuracy(0.05);
+//        annotationSettings.setFragmentIonAccuracy(0.05);
         annotationSettings.setIntensityFilter(0.00);
 
         SpectrumPanel.setIonColor(Ion.getGenericIon(Ion.IonType.PEPTIDE_FRAGMENT_ION, 1), new Color(0, 153, 0));

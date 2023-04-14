@@ -12,7 +12,9 @@ import javax.swing.table.DefaultTableModel;
 import javax.xml.stream.FactoryConfigurationError;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class PSMTableModel extends DefaultTableModel {
 
@@ -44,6 +46,10 @@ public class PSMTableModel extends DefaultTableModel {
      * Mapped spectrum Index
      */
     private ArrayList<String> mappedSpectrumIndex = new ArrayList<>();
+    private ArrayList<String> defaultColumnNames = new ArrayList<>(List.of("PeptideLength", "Charge", "Retention",
+            "ObservedMass", "CalibratedObservedMass", "ObservedMZ", "CalibratedObservedMZ", "CalculatedPeptideMass",
+            "CalculatedMZ", "DeltaMass", "Expectation", "Hyperscore", "Nextscore", "PeptideProphetProbability", "NumberofEnzymaticTermini",
+            "NumberofMissedCleavages", "ProteinStart", "ProteinEnd", "Intensity"));
 
     /**
      * Empty constructor
@@ -219,14 +225,17 @@ public class PSMTableModel extends DefaultTableModel {
                 return Double.class;
             case 6:
                 return Integer.class;
-            default:
-                for (int i = 0; i < getRowCount(); i++) {
-                    if (getValueAt(i, columnIndex) != null && !getColumnName(columnIndex).contains("BestLocalization")) {
-                        return getValueAt(i, columnIndex).getClass();
-                    } else {
-                        return String.class;
-                    }
+            default: //Need to think about
+                if (defaultColumnNames.contains(getColumnName(columnIndex))){
+                    return getValueAt(0, columnIndex).getClass();
                 }
+//                for (int i = 0; i < getRowCount(); i++) {
+//                    if (getValueAt(i, columnIndex) != null && !getColumnName(columnIndex).contains("BestLocalization")) {
+//                        return getValueAt(i, columnIndex).getClass();
+//                    } else {
+//                        return String.class;
+//                    }
+//                }
         }
         return String.class;
     }
