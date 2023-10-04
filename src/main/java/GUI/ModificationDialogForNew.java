@@ -171,7 +171,7 @@ public class ModificationDialogForNew extends JDialog {
             if (!userInput) {
                 newDefinedModificationDialog.tempMass = Double.valueOf(df.format(ptmFactory.getPTM(selectedModification).getMass()));
             } else {
-                newDefinedModificationDialog.tempMass = Double.valueOf(df.format(selectedModification));
+                newDefinedModificationDialog.tempMass = Double.valueOf(selectedModification);
             }
         }
         this.dispose();

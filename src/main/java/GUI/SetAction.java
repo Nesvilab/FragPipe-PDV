@@ -147,6 +147,7 @@ public class SetAction {
 
                     if (exportExpectedSizeDialog == null) {
                         if (secondarySpectrumPlotsJPanel != null) {
+//                            System.out.println("Test " + "Width is "+spectrumShowPanel.getWidth()+ " height is "+spectrumShowPanel.getHeight());
                             spectrumJPanel.setBounds(0, 75, spectrumShowPanel.getWidth(), spectrumShowPanel.getHeight() - 85);
                         }
                     }

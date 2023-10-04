@@ -328,7 +328,7 @@ public class ImportData {
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0]);
             }
 
-            if (Objects.equals(lineSplit[1], "")){
+            if (Objects.equals(lineSplit[1], "") || Objects.equals(lineSplit[3], "DIA")){
                 expName = "inner_defined_empty_exp";
             } else {
                 if (Objects.equals(lineSplit[2], "")) {

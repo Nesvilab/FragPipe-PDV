@@ -2404,7 +2404,6 @@ public class GUIMainClass extends JFrame {
         int row = spectrumJTable.getSelectedRow();
         int column = spectrumJTable.getSelectedColumn();
 
-
         if (row != -1) {
             this.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
@@ -3634,10 +3633,8 @@ public class GUIMainClass extends JFrame {
 
                     setUpTableHeaderToolTips();
 
-                    updateSpectrumFactoryFirst(progressDialog);
+                    displayResults(progressDialog);
                     updateSpectrumFactory();
-
-                    displayResults();
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -3768,8 +3765,9 @@ public class GUIMainClass extends JFrame {
 //        readFactoryThread.start();
 //    }
 
-    private void updateSpectrumFactoryFirst(ProgressDialogX progressDialog) throws IOException, ClassNotFoundException {
-        String spectralFilePath = spectrumFileMap.get(spectrumFileOrder.get(0));
+    private void updateSpectrumFactoryFirst(ProgressDialogX progressDialog, String firstTitle) {
+        String spectrumFileName = firstTitle.split("\\.")[0];
+        String spectralFilePath = spectrumFileMap.get(spectrumFileName);
 
         try {
             if (Files.exists(new File(spectralFilePath).toPath())) {
@@ -3787,8 +3785,8 @@ public class GUIMainClass extends JFrame {
             progressDialog.setRunFinished();
         }
 
-        finishedSpectrumFiles.add(spectrumFileOrder.get(0));
-        spectrumFileOrder.remove(spectrumFileOrder.get(0));
+        finishedSpectrumFiles.add(spectrumFileName);
+        spectrumFileOrder.remove(spectrumFileName);
         progressDialog.setRunFinished();
     }
 
@@ -3839,7 +3837,7 @@ public class GUIMainClass extends JFrame {
         spectrumFileTypes.put(spectrumName, "mzml");
     }
 
-    public void displayResults() throws SQLException {
+    public void displayResults(ProgressDialogX progressDialog) throws SQLException {
         psmSortColumnJCombox.setEnabled(true);
         psmDownSortJButton.setVisible(true);
         psmUpSortJButton.setVisible(true);
@@ -3880,6 +3878,8 @@ public class GUIMainClass extends JFrame {
         updateAllProteinIndexes(sqliteConnection.getProteinList(expAllSelections));
 
         String initProtein = allProteinIndex.get(selectedProteinPageNum - 1).get(0);
+
+        updateSpectrumFactoryFirst(progressDialog, sqliteConnection.getSpectrumOldTitle(sqliteConnection.getSpectrumListOneProtein(initProtein)[0].get(0)));
         //System.out.println(initProtein);
         updateAllPSMIndexes(sqliteConnection.getSpectrumListOneProtein(initProtein));
         proteinCurrentSelections.add(initProtein);

@@ -1366,51 +1366,71 @@ public class SpectrumMainPanel extends JPanel {
 
         exportGraphicsMenu.setVisible(true);
 
-        if (parentFrame.predictionEntryHashMap.size() == 0){
-            ProgressDialogX progressDialog = new ProgressDialogX(parentFrame,
-                    Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMass.png")),
-                    Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMassWait.png")),
-                    true);
-            progressDialog.setPrimaryProgressCounterIndeterminate(true);
-            progressDialog.setTitle("First time Loading predicted spectra. Please Wait...");
+        try {
 
-            new Thread(() -> {
-                try {
-                    progressDialog.setVisible(true);
-                } catch (IndexOutOfBoundsException ignored) {
-                }
-            }, "ProgressDialog").start();
-            new Thread("Import_Spectra") {
-                @Override
-                public void run() {
-                    try {
-                        if (parentFrame.expInformation.contains("inner_defined_empty_exp")) {
-                            DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin");
-                            parentFrame.predictionEntryHashMap = dslr.getPreds();
-                        } else {
-                            for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
-                                if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
-                                    if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
-                                        DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
-                                        parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
-                                    }
-                                }
+            if (parentFrame.predictionEntryHashMap.size() == 0) {
+                parentFrame.loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/loading.gif")));
+                parentFrame.loadingJButton.setText("Loading predicted spectra.");
+                if (parentFrame.expInformation.contains("inner_defined_empty_exp")) {
+                    DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin");
+                    parentFrame.predictionEntryHashMap = dslr.getPreds();
+                } else {
+                    for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
+                        if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
+                            if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()) {
+                                DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
+                                parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
                             }
                         }
-
-                        //updateSpectrum();
-                    } catch (Exception e){
-                        progressDialog.setRunFinished();
-                        JOptionPane.showMessageDialog(
-                                parentFrame, "Failed to load predicted spectra, please check it.\n" + e.toString(),
-                                "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
-                        System.exit(-1);
                     }
-                    progressDialog.setRunFinished();
-                    showPredictionJMenuItemActionPerformed(null);
                 }
-            }.start();
-        }
+                parentFrame.loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/done.png")));
+                parentFrame. loadingJButton.setText("Import done");
+//                ProgressDialogX progressDialog = new ProgressDialogX(parentFrame,
+//                        Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMass.png")),
+//                        Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMassWait.png")),
+//                        true);
+//                progressDialog.setPrimaryProgressCounterIndeterminate(true);
+//                progressDialog.setTitle("First time Loading predicted spectra. Please Wait...");
+//
+//                new Thread(() -> {
+//                    try {
+//                        progressDialog.setVisible(true);
+//                    } catch (IndexOutOfBoundsException ignored) {
+//                    }
+//                }, "PredictedBar").start();
+//                new Thread("Import_Predicted_Spectra") {
+//                    @Override
+//                    public void run() {
+//                        try {
+//                            if (parentFrame.expInformation.contains("inner_defined_empty_exp")) {
+//                                DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin");
+//                                parentFrame.predictionEntryHashMap = dslr.getPreds();
+//                            } else {
+//                                for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
+//                                    if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
+//                                        if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()) {
+//                                            DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
+//                                            parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
+//                                        }
+//                                    }
+//                                }
+//                            }
+//
+//                            //updateSpectrum();
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                            progressDialog.setRunFinished();
+//                            JOptionPane.showMessageDialog(
+//                                    parentFrame, "Failed to load predicted spectra, please check it.\n" + e.toString(),
+//                                    "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
+//                            System.exit(-1);
+//                        }
+//                        showPredictionJMenuItemActionPerformed(null);
+//                        progressDialog.setRunFinished();
+//                    }
+//                }.start();
+            }
             mainShowJPanel.removeAll();
             GroupLayout mainShowJPanelLayout = new GroupLayout(mainShowJPanel);
             mainShowJPanel.setLayout(mainShowJPanelLayout);
@@ -1423,6 +1443,7 @@ public class SpectrumMainPanel extends JPanel {
                     mainShowJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                             .addComponent(predictionJLayeredPane, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
             );
+
             mainShowJPanel.revalidate();
             mainShowJPanel.repaint();
             splitterMenu7.setVisible(false);
@@ -1430,6 +1451,12 @@ public class SpectrumMainPanel extends JPanel {
             peptideCheckMenu.setVisible(false);
 
             updateSpectrum();
+        } catch (Exception e){
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(
+                    null, e.getMessage(),
+                    "Error Parsing File", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private MSnSpectrum getPredictSpectrum(){
@@ -1455,8 +1482,10 @@ public class SpectrumMainPanel extends JPanel {
 
             HashMap<Double, Peak> peakHashMap = new HashMap<>();
             for (int i = 0; i<preMzs.length; i++){
-                Peak peak = new Peak(preMzs[i], preInts[i]);
-                peakHashMap.put((double) preMzs[i], peak);
+                if (preInts[i] >= 0) { // TODO add a filter for predicted peaks.
+                    Peak peak = new Peak(preMzs[i], preInts[i]);
+                    peakHashMap.put((double) preMzs[i], peak);
+                }
             }
             peakHashMap.put(0.01, new Peak(0.01, 0.01));
 
@@ -1733,6 +1762,7 @@ public class SpectrumMainPanel extends JPanel {
                     spectrumPanel.setPeakWaterMarkColor(utilitiesUserPreferences.getSpectrumBackgroundPeakColor());
                     spectrumPanel.setPeakWidth(utilitiesUserPreferences.getSpectrumAnnotatedPeakWidth());
                     spectrumPanel.setBackgroundPeakWidth(utilitiesUserPreferences.getSpectrumBackgroundPeakWidth());
+                    spectrumPanel.setGlycanColor(utilitiesUserPreferences.getAddGlycanColor());
                     spectrumPanel.setAnnotations(SpectrumAnnotator.getSpectrumAnnotation(annotations), annotationSettings.getTiesResolution() == SpectrumAnnotator.TiesResolution.mostAccurateMz);
 
                     if (spectrumIdentificationAssumption instanceof TagAssumption) {
@@ -1770,7 +1800,6 @@ public class SpectrumMainPanel extends JPanel {
                     ArrayList<Double> mzList = new ArrayList<>();
                     for (IonMatch ionMatch : annotations){
                         String match = ionMatch.getPeakAnnotation();
-                        
                         Integer charge = ionMatch.charge;
 
                         if (match.contains("b")) {
@@ -1964,6 +1993,7 @@ public class SpectrumMainPanel extends JPanel {
                     mirrorSpectrumPanel.setPeakWaterMarkColor(utilitiesUserPreferences.getSpectrumBackgroundPeakColor());
                     mirrorSpectrumPanel.setPeakWidth(utilitiesUserPreferences.getSpectrumAnnotatedPeakWidth());
                     mirrorSpectrumPanel.setBackgroundPeakWidth(utilitiesUserPreferences.getSpectrumBackgroundPeakWidth());
+                    mirrorSpectrumPanel.setGlycanColor(utilitiesUserPreferences.getAddGlycanColor());
                     mirrorSpectrumPanel.setAnnotations(SpectrumAnnotator.getSpectrumAnnotation(annotations), annotationSettings.getTiesResolution() == SpectrumAnnotator.TiesResolution.mostAccurateMz);
                     mirrorSpectrumPanel.rescale(lowerMzZoomRange, upperMzZoomRange);
                     mirrorSpectrumPanel.showAnnotatedPeaksOnly(!annotationSettings.showAllPeaks());
@@ -2070,6 +2100,7 @@ public class SpectrumMainPanel extends JPanel {
                     checkPeptideSpectrumPanel.setPeakWaterMarkColor(utilitiesUserPreferences.getSpectrumBackgroundPeakColor());
                     checkPeptideSpectrumPanel.setPeakWidth(utilitiesUserPreferences.getSpectrumAnnotatedPeakWidth());
                     checkPeptideSpectrumPanel.setBackgroundPeakWidth(utilitiesUserPreferences.getSpectrumBackgroundPeakWidth());
+                    checkPeptideSpectrumPanel.setGlycanColor(utilitiesUserPreferences.getAddGlycanColor());
                     checkPeptideSpectrumPanel.setAnnotations(SpectrumAnnotator.getSpectrumAnnotation(annotations), annotationSettings.getTiesResolution() == SpectrumAnnotator.TiesResolution.mostAccurateMz);
                     checkPeptideSpectrumPanel.rescale(lowerMzZoomRange, upperMzZoomRange);
                     checkPeptideSpectrumPanel.showAnnotatedPeaksOnly(!annotationSettings.showAllPeaks());
@@ -2141,7 +2172,6 @@ public class SpectrumMainPanel extends JPanel {
 
                     if(getPredictSpectrum() != null){
 
-
                         MSnSpectrum preSpectrum = getPredictSpectrum();
                         Precursor prePrecursor = preSpectrum.getPrecursor();
                         predictedSpectrumPanel.addMirroredSpectrum(
@@ -2184,6 +2214,7 @@ public class SpectrumMainPanel extends JPanel {
 
                         predictionJLayeredPane.setLayer(predictedFragmentPanel, JLayeredPane.DRAG_LAYER);
                         predictionJLayeredPane.add(predictedFragmentPanel);
+
                         zoomAction(predictedFragmentPanel, modSequence, true);
                     }
 
@@ -2196,6 +2227,7 @@ public class SpectrumMainPanel extends JPanel {
                     predictedSpectrumPanel.setPeakWaterMarkColor(utilitiesUserPreferences.getSpectrumBackgroundPeakColor());
                     predictedSpectrumPanel.setPeakWidth(utilitiesUserPreferences.getSpectrumAnnotatedPeakWidth());
                     predictedSpectrumPanel.setBackgroundPeakWidth(utilitiesUserPreferences.getSpectrumBackgroundPeakWidth());
+                    predictedSpectrumPanel.setGlycanColor(utilitiesUserPreferences.getAddGlycanColor());
                     predictedSpectrumPanel.setAnnotations(SpectrumAnnotator.getSpectrumAnnotation(annotations), annotationSettings.getTiesResolution() == SpectrumAnnotator.TiesResolution.mostAccurateMz);
                     predictedSpectrumPanel.rescale(lowerMzZoomRange, upperMzZoomRange);
                     predictedSpectrumPanel.showAnnotatedPeaksOnly(!annotationSettings.showAllPeaks());
@@ -2449,6 +2481,19 @@ public class SpectrumMainPanel extends JPanel {
                     newModificationMatches.add(new ModificationMatch("0.0 of N", true, modificationMatch.getModificationSite()));
                 } else if (glycanMenuItemSelection[1] == 1){
                     newModificationMatches.add(new ModificationMatch("203.079 of N", true, modificationMatch.getModificationSite()));
+                }
+
+            } else if ( ((modificationMatch.getTheoreticPtm().split(" of ")[1]).equals("S") ||
+                    (modificationMatch.getTheoreticPtm().split(" of ")[1]).equals("T") ||
+                    (modificationMatch.getTheoreticPtm().split(" of ")[1]).equals("ST"))
+                    && (modificationMatch.getTheoreticPtm().equals("0.0 of ST")
+                    || Double.parseDouble(modificationMatch.getTheoreticPtm().split(" of")[0]) > 100)){
+                if (Arrays.equals(glycanMenuItemSelection, new Integer[]{0, 0})){
+                    newModificationMatches.add(oriModificationMatches.get(modificationMatch.getModificationSite()));
+                } else if (glycanMenuItemSelection[0] == 1){
+                    newModificationMatches.add(new ModificationMatch("0.0 of ST", true, modificationMatch.getModificationSite()));
+                } else if (glycanMenuItemSelection[1] == 1){
+                    newModificationMatches.add(oriModificationMatches.get(modificationMatch.getModificationSite()));
                 }
 
             } else {

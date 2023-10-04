@@ -17,6 +17,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ public class AnnotationSettingsDialog extends JDialog {
     private JTextField fragmentIonAccuracyTxt;
     private JScrollPane colorsScrollPane;
     private JTable colorsJTable;
+    private JCheckBox glycanColorJCheckBox;
 
     /**
      * Ion types map
@@ -126,12 +128,14 @@ public class AnnotationSettingsDialog extends JDialog {
         backgroundPeakWidthJSpinner = new JSpinner();
         limitJSpinner = new JSpinner();
         toleranceUnitJComboBox = new JComboBox();
+        glycanColorJCheckBox = new JCheckBox();
         fragmentIonAccuracyTxt = new JTextField(String.valueOf(searchParameters.getFragmentIonAccuracy()));
         JPanel peakSettingsJPanel = new JPanel();
         JLabel annotatedPeakJLabel = new JLabel();
         JLabel backgroundPeakJLabel = new JLabel();
         JLabel annotatedWidthLabel = new JLabel();
         JLabel backgroundWidthLabel = new JLabel();
+        JLabel glycanColorJCheckBoxLabel = new JLabel();
         JPanel annotationLevelJPanel = new JPanel();
         JLabel limitJLabel = new JLabel();
         JLabel fragmentIonAccuracyJLabel = new JLabel("Fragment m/z Tolerance: ");
@@ -258,11 +262,25 @@ public class AnnotationSettingsDialog extends JDialog {
         backgroundWidthLabel.setText("Background Peak Width");
         backgroundWidthLabel.setFont(new Font("Console", Font.PLAIN, 11));
 
+        glycanColorJCheckBoxLabel.setText("Glycan Structure");
+        glycanColorJCheckBoxLabel.setToolTipText("Not the real structure! Just for illustration!");
+        glycanColorJCheckBoxLabel.setFont(new Font("Console", Font.PLAIN, 11));
+
         annotatedPeakWidthJSpinner.setModel(new SpinnerNumberModel(1.0f, 1.0f, null, 1.0f));
         annotatedPeakWidthJSpinner.addChangeListener(this::annotatedPeakWidthValueChanged);
 
         backgroundPeakWidthJSpinner.setModel(new SpinnerNumberModel(1.0f, 1.0f, null, 1.0f));
         backgroundPeakWidthJSpinner.addChangeListener(this::backgroundPeakWidthValueChanged);
+
+        glycanColorJCheckBox.setBackground(Color.white);
+        glycanColorJCheckBox.setToolTipText("Not the real structure! Just for illustration!");
+        glycanColorJCheckBox.setSelected(utilitiesUserPreferences.getAddGlycanColor());
+        glycanColorJCheckBox.setOpaque(false);
+        glycanColorJCheckBox.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent evt){
+                glycanColorJCheckBoxMouseClicked(evt);
+            }
+        });
 
         GroupLayout peakSettingsJPanelLayout = new GroupLayout(peakSettingsJPanel);
         peakSettingsJPanel.setLayout(peakSettingsJPanelLayout);
@@ -279,7 +297,7 @@ public class AnnotationSettingsDialog extends JDialog {
                         .addComponent(annotatedPeakJLabel, GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                         .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(annotatedPeakColorJPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-                .addGap(50, 50, 50)
+                .addGap(20, 50, 50)
                 .addGroup(peakSettingsJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING, false)
                     .addGroup(peakSettingsJPanelLayout.createSequentialGroup()
                         .addComponent(annotatedWidthLabel)
@@ -287,8 +305,13 @@ public class AnnotationSettingsDialog extends JDialog {
                         .addComponent(annotatedPeakWidthJSpinner, GroupLayout.PREFERRED_SIZE, 55, GroupLayout.PREFERRED_SIZE))
                     .addGroup(peakSettingsJPanelLayout.createSequentialGroup()
                         .addComponent(backgroundWidthLabel)
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(backgroundPeakWidthJSpinner, GroupLayout.PREFERRED_SIZE, 55, GroupLayout.PREFERRED_SIZE)))
+                .addGap(20, 50, 50)
+                .addGroup(peakSettingsJPanelLayout.createSequentialGroup()
+                        .addComponent(glycanColorJCheckBoxLabel)
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(glycanColorJCheckBox, GroupLayout.PREFERRED_SIZE, 55, GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
 
@@ -302,7 +325,9 @@ public class AnnotationSettingsDialog extends JDialog {
                     .addComponent(annotatedPeakJLabel)
                     .addComponent(annotatedPeakColorJPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                     .addComponent(annotatedWidthLabel)
-                    .addComponent(annotatedPeakWidthJSpinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+                    .addComponent(annotatedPeakWidthJSpinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(glycanColorJCheckBoxLabel)
+                    .addComponent(glycanColorJCheckBox))
                 .addGroup(peakSettingsJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                     .addComponent(backgroundPeakColorJPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                     .addGroup(peakSettingsJPanelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
@@ -575,6 +600,10 @@ public class AnnotationSettingsDialog extends JDialog {
         annotationSettings.setIntensityFilter((Double) limitJSpinner.getValue());
         updateSpectrumAnnotations();
     }
+    private void glycanColorJCheckBoxMouseClicked(MouseEvent evt) {
+        utilitiesUserPreferences.setAddGlycanColor(glycanColorJCheckBox.isSelected());
+    }
+
 
     /**
      * Update spectrum annotation
