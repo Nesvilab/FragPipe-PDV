@@ -3768,7 +3768,7 @@ public class GUIMainClass extends JFrame {
     private void updateSpectrumFactoryFirst(ProgressDialogX progressDialog, String firstTitle) {
         String spectrumFileName = firstTitle.split("\\.")[0];
         String spectralFilePath = spectrumFileMap.get(spectrumFileName);
-
+        System.out.println(spectrumFileMap);
         try {
             if (Files.exists(new File(spectralFilePath).toPath())) {
                 readSpectrumFile(spectralFilePath);
@@ -3808,8 +3808,10 @@ public class GUIMainClass extends JFrame {
             } else if (spectralFilePath.endsWith(".d")){
                 if (new File(spectralFilePath.replace(".d", "_uncalibrated.mzml")).exists()){
                     addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
-                } else {
+                } else if (new File(spectralFilePath.replace(".d", "_calibrated.mzml")).exists()){
                     addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
+                } else {
+                    addOneMzML(spectrumName + "_centric", spectralFilePath.replace(".d", "_centric.mzML"));
                 }
 
             } else if (spectralFilePath.toLowerCase().endsWith("mzml")){
@@ -3822,6 +3824,8 @@ public class GUIMainClass extends JFrame {
     }
 
     private void addOneMzML(String spectrumName, String spectralFilePath){
+        System.out.println(spectrumName);
+        System.out.println("Reading " + spectralFilePath);
         MZMLFile mzmlFile = new MZMLFile(spectralFilePath);
         mzmlFile.setNumThreadsForParsing(threadsNumber);
         ScanCollectionDefault scans = new ScanCollectionDefault();
@@ -3878,9 +3882,16 @@ public class GUIMainClass extends JFrame {
         updateAllProteinIndexes(sqliteConnection.getProteinList(expAllSelections));
 
         String initProtein = allProteinIndex.get(selectedProteinPageNum - 1).get(0);
+        if (sqliteConnection.getSpectrumListOneProtein(initProtein)[0].size() == 0){
+            for (String newProtein : allProteinIndex.get(selectedProteinPageNum - 1)){
+                if (sqliteConnection.getSpectrumListOneProtein(newProtein)[0].size() != 0){
+                    initProtein = newProtein;
+                    break;
+                }
+            }
+        }
 
         updateSpectrumFactoryFirst(progressDialog, sqliteConnection.getSpectrumOldTitle(sqliteConnection.getSpectrumListOneProtein(initProtein)[0].get(0)));
-        //System.out.println(initProtein);
         updateAllPSMIndexes(sqliteConnection.getSpectrumListOneProtein(initProtein));
         proteinCurrentSelections.add(initProtein);
 

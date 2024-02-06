@@ -358,6 +358,9 @@ public class ImportData {
                                 }
                             }
                         }
+                    }else {
+                        String[] fileArr = lineSplit[0].split(pattern);
+                        spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0]);
                     }
                 }
 
@@ -384,6 +387,9 @@ public class ImportData {
                                 }
                             }
                         }
+                    }else {
+                        String[] fileArr = lineSplit[0].split(pattern);
+                        spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0]);
                     }
                 }
             }
