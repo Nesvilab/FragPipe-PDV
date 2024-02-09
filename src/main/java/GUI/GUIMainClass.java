@@ -3680,7 +3680,7 @@ public class GUIMainClass extends JFrame {
                         loadingJButton.setText(eachFileName);
 
                         try {
-                            readSpectrumFile(spectralFilePath);
+                            readSpectrumFile(spectralFilePath, eachFileName);
                             if (addNewFile && Objects.equals(newSpectrumFile, eachFileName)){
                                 updateSpectrum(getSpectrum(selectedPsmKey), spectrumMatch);
                                 importNewFileDialog.setRunFinished();
@@ -3709,69 +3709,12 @@ public class GUIMainClass extends JFrame {
         readFactoryThread.start();
     }
 
-//    private void updateSpectrumFactory(Boolean addNew, String addOneFile, ProgressDialogX progressDialog){
-//        if (addNew){
-//            String spectralFilePath = spectrumFileMap.get(addOneFile);
-//
-//            if (Files.exists(new File(spectralFilePath).toPath())) {
-//                try {
-//                    readSpectrumFile(spectralFilePath);
-//                    progressDialog.setRunFinished();
-//                } catch (IOException | ClassNotFoundException e) {
-//                    e.printStackTrace();
-//                }
-//            } else {
-//                JOptionPane.showMessageDialog(
-//                        null, "Invalid spectrum file path, please check it.",
-//                        "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
-//                progressDialog.setRunFinished();
-//            }
-//            finishedSpectrumFiles.add(addOneFile);
-//        }
-//
-//        readFactoryThread = new Thread("ImportSpectrum") {
-//            @Override
-//            public void run() {
-//                for (String eachFileName : spectrumFileOrder){
-//                    if (!finishedSpectrumFiles.contains(eachFileName)){
-//                        String spectralFilePath = spectrumFileMap.get(eachFileName);
-//                        if (Files.exists(new File(spectralFilePath).toPath())) {
-//                            loadingJButton.setText(eachFileName);
-////                            try {
-////                                sleep(1000);
-////                            } catch (InterruptedException e) {
-////                                e.printStackTrace();
-////                            }
-//                            try {
-//                                readSpectrumFile(spectralFilePath);
-//                            } catch (Exception e) {
-//                                if (e.getClass() != InterruptedException.class){
-//                                    e.printStackTrace();
-//                                }
-//                            }
-//                        } else {
-//                            JOptionPane.showMessageDialog(
-//                                    null, "Invalid spectrum file path, please check it.",
-//                                    "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
-//                        }
-//                        finishedSpectrumFiles.add(eachFileName);
-//                    }
-//                }
-//                loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/done.png")));
-//                loadingJButton.setText("Import done");
-//
-//            }
-//        };
-//        readFactoryThread.start();
-//    }
-
     private void updateSpectrumFactoryFirst(ProgressDialogX progressDialog, String firstTitle) {
         String spectrumFileName = firstTitle.split("\\.")[0];
         String spectralFilePath = spectrumFileMap.get(spectrumFileName);
-        System.out.println(spectrumFileMap);
         try {
             if (Files.exists(new File(spectralFilePath).toPath())) {
-                readSpectrumFile(spectralFilePath);
+                readSpectrumFile(spectralFilePath, spectrumFileName);
             } else {
                 JOptionPane.showMessageDialog(
                         null, "Invalid spectrum file path, please check it.",
@@ -3790,29 +3733,29 @@ public class GUIMainClass extends JFrame {
         progressDialog.setRunFinished();
     }
 
-    private void readSpectrumFile(String spectralFilePath) throws IOException, ClassNotFoundException {
-        String spectrumName = new File(spectralFilePath).getName().split("\\.")[0];
+    private void readSpectrumFile(String spectralFilePath, String spectrumName) throws IOException, ClassNotFoundException {
+//        String spectrumName = new File(spectralFilePath).getName().split("\\.")[0];
         if (!spectrumFileTypes.containsKey(spectrumName)){
 
             if (spectralFilePath.endsWith("mgf")){
                 spectrumFactory.addSpectra(new File(spectralFilePath));
                 mgfFiles.add(spectralFilePath);
                 spectrumFileTypes.put(spectrumName, "mgf");
-            } else if (spectralFilePath.endsWith("raw")){
-                if (new File(spectralFilePath.replace(".raw", "_uncalibrated.mzml")).exists()){
-                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_uncalibrated.mzml"));
-                } else {
-                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_calibrated.mzml"));
-                }
-
-            } else if (spectralFilePath.endsWith(".d")){
-                if (new File(spectralFilePath.replace(".d", "_uncalibrated.mzml")).exists()){
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
-                } else if (new File(spectralFilePath.replace(".d", "_calibrated.mzml")).exists()){
-                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
-                } else {
-                    addOneMzML(spectrumName + "_centric", spectralFilePath.replace(".d", "_centric.mzML"));
-                }
+//            } else if (spectralFilePath.endsWith("raw")){
+//                if (new File(spectralFilePath.replace(".raw", "_uncalibrated.mzml")).exists()){
+//                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_uncalibrated.mzml"));
+//                } else {
+//                    addOneMzML(spectrumName, spectralFilePath.replace(".raw", "_calibrated.mzml"));
+//                }
+//
+//            } else if (spectralFilePath.endsWith(".d")){
+//                if (new File(spectralFilePath.replace(".d", "_uncalibrated.mzml")).exists()){
+//                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_uncalibrated.mzml"));
+//                } else if (new File(spectralFilePath.replace(".d", "_calibrated.mzml")).exists()){
+//                    addOneMzML(spectrumName, spectralFilePath.replace(".d", "_calibrated.mzml"));
+//                } else {
+//                    addOneMzML(spectrumName + "_centric", spectralFilePath.replace(".d", "_centric.mzML"));
+//                }
 
             } else if (spectralFilePath.toLowerCase().endsWith("mzml")){
                 addOneMzML(spectrumName, spectralFilePath);
@@ -3824,8 +3767,6 @@ public class GUIMainClass extends JFrame {
     }
 
     private void addOneMzML(String spectrumName, String spectralFilePath){
-        System.out.println(spectrumName);
-        System.out.println("Reading " + spectralFilePath);
         MZMLFile mzmlFile = new MZMLFile(spectralFilePath);
         mzmlFile.setNumThreadsForParsing(threadsNumber);
         ScanCollectionDefault scans = new ScanCollectionDefault();

@@ -322,10 +322,19 @@ public class ImportData {
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzml")[0], lineSplit[0]);
             } else if (lineSplit[0].endsWith(".raw")){
                 String[] fileArr = lineSplit[0].split(pattern);
-                spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0]);
+                if (new File(lineSplit[0].replace(".raw", "_uncalibrated.mzml")).exists()){
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_uncalibrated.mzml"));
+                } else {
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_calibrated.mzml"));
+                }
+
             } else if (lineSplit[0].endsWith(".d")){
                 String[] fileArr = lineSplit[0].split(pattern);
-                spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0]);
+                if (new File(lineSplit[0].replace(".d", "_uncalibrated.mzml")).exists()){
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_uncalibrated.mzml"));
+                } else {
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_calibrated.mzml"));
+                }
             }
 
             if (Objects.equals(lineSplit[1], "") || Objects.equals(lineSplit[3], "DIA")){
