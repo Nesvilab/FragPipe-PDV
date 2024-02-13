@@ -196,6 +196,8 @@ public class PSMTableModel extends DefaultTableModel {
                             return Double.valueOf((Integer)object);
                         } else if (object.getClass() == Double.class){
                             return object;
+                        } else {
+                            return object;
                         }
                     }
                 }
