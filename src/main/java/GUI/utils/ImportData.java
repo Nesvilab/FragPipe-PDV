@@ -328,12 +328,19 @@ public class ImportData {
                     spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_calibrated.mzml"));
                 }
 
-            } else if (lineSplit[0].endsWith(".d")){
+            } else if (lineSplit[0].endsWith(".d") && Objects.equals(lineSplit[3], "DDA")){
                 String[] fileArr = lineSplit[0].split(pattern);
                 if (new File(lineSplit[0].replace(".d", "_uncalibrated.mzml")).exists()){
                     spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_uncalibrated.mzml"));
                 } else {
                     spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_calibrated.mzml"));
+                }
+            } else if (lineSplit[0].endsWith(".d") && Objects.equals(lineSplit[3], "DIA")){
+                String[] fileArr = lineSplit[0].split(pattern);
+                if (new File(lineSplit[0].replace(".d", "_centric_calibrated.mzml")).exists()){
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric_calibrated.mzML"));
+                } else {
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric.mzML"));
                 }
             }
 
@@ -367,9 +374,6 @@ public class ImportData {
                                 }
                             }
                         }
-                    }else {
-                        String[] fileArr = lineSplit[0].split(pattern);
-                        spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0]);
                     }
                 }
 
@@ -396,9 +400,6 @@ public class ImportData {
                                 }
                             }
                         }
-                    }else {
-                        String[] fileArr = lineSplit[0].split(pattern);
-                        spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0]);
                     }
                 }
             }
