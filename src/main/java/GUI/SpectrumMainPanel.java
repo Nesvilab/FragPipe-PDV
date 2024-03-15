@@ -22,17 +22,20 @@ import com.compomics.util.experiment.massspectrometry.*;
 import com.compomics.util.gui.spectrum.FragmentIonTable;
 import com.compomics.util.gui.spectrum.SequenceFragmentationPanel;
 import com.compomics.util.gui.spectrum.SpectrumPanel;
-import com.compomics.util.gui.waiting.waitinghandlers.ProgressDialogX;
 import com.compomics.util.preferences.LastSelectedFolder;
 import com.compomics.util.preferences.SequenceMatchingPreferences;
 import com.compomics.util.preferences.UtilitiesUserPreferences;
+import uk.ac.ebi.jmzml.xml.io.MzMLUnmarshallerException;
 import umich.ms.fileio.filetypes.diann.DiannSpeclibReader;
 import umich.ms.fileio.filetypes.diann.PredictionEntry;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -68,6 +71,7 @@ public class SpectrumMainPanel extends JPanel {
     private JCheckBoxMenuItem glycansCheckMenuItem;
     private JCheckBoxMenuItem glycanZeroCheckMenuItem;
     private JCheckBoxMenuItem glycanOneCheckMenuItem;
+    private JCheckBoxMenuItem showPairedETDScanMenuItem;
     private JCheckBoxMenuItem defaultLossCheckBoxMenuItem;
     private JCheckBoxMenuItem showAllPeaksMenuItem;
     private JCheckBoxMenuItem showMatchesPeaksMenuItem;
@@ -161,6 +165,7 @@ public class SpectrumMainPanel extends JPanel {
      * Show matched peaks only
      */
     private boolean showMatchedPeaksOnly = false;
+    private boolean showPairedETDScan = false;
     /**
      * LastSelectFolder accessed easily
      */
@@ -189,6 +194,8 @@ public class SpectrumMainPanel extends JPanel {
      * Current psmKey selected
      */
     private String selectedPsmKey = "";
+    private String pairedScanNum = "";
+    private MSnSpectrum pairedSpectrum;
     /**
      * Synthetic peptide spectra file map
      */
@@ -405,6 +412,7 @@ public class SpectrumMainPanel extends JPanel {
         glycansCheckMenuItem = new JCheckBoxMenuItem();
         glycanZeroCheckMenuItem = new JCheckBoxMenuItem();
         glycanOneCheckMenuItem = new JCheckBoxMenuItem();
+        showPairedETDScanMenuItem = new JCheckBoxMenuItem();
         immoniumIonsCheckMenuItem = new JCheckBoxMenuItem();
         relatedIonsCheckMenuItem = new JCheckBoxMenuItem();
         reporterIonsCheckMenuItem = new JCheckBoxMenuItem();
@@ -523,6 +531,12 @@ public class SpectrumMainPanel extends JPanel {
         glycanOneCheckMenuItem.setFont(menuFont);
         glycanOneCheckMenuItem.addActionListener(this::glycanOneCheckMenuItemAction);
         otherMenu.add(glycanOneCheckMenuItem);
+
+        showPairedETDScanMenuItem.setVisible(false);
+        showPairedETDScanMenuItem.setText("Show Paired ETD Scan");
+        showPairedETDScanMenuItem.setFont(menuFont);
+        showPairedETDScanMenuItem.addActionListener(this::pairedScanNumMenuItemAction);
+        otherMenu.add(showPairedETDScanMenuItem);
 
         annotationMenuBar.add(otherMenu);
 
@@ -964,6 +978,15 @@ public class SpectrumMainPanel extends JPanel {
     }
 
     /**
+     * glycanOneCheckMenuItemAction
+     * @param evt Mouse click event
+     */
+    private void pairedScanNumMenuItemAction(ActionEvent evt) {
+        showPairedETDScan = showPairedETDScanMenuItem.isSelected();
+        updateSpectrum();
+    }
+
+    /**
      * relatedIonsCheckMenuItemAction
      * @param evt Mouse click event
      */
@@ -1372,14 +1395,24 @@ public class SpectrumMainPanel extends JPanel {
                 parentFrame.loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/loading.gif")));
                 parentFrame.loadingJButton.setText("Loading predicted spectra.");
                 if (parentFrame.expInformation.contains("inner_defined_empty_exp")) {
-                    DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin");
-                    parentFrame.predictionEntryHashMap = dslr.getPreds();
+                    if (parentFrame.usedDiaNNPrediction) {
+                        DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin");
+                        parentFrame.predictionEntryHashMap = dslr.getPreds();
+                    } else {
+                        parentFrame.predictionEntryHashMap = importPredictedSpectra(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT_koina.mgf");
+                    }
                 } else {
                     for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
                         if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
-                            if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()) {
-                                DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
-                                parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
+                            if (parentFrame.usedDiaNNPrediction) {
+                                if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()) {
+                                    DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
+                                    parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
+                                }
+                            } else {
+                                if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT_koina.mgf").exists()) {
+                                    parentFrame.predictionEntryHashMap.putAll(importPredictedSpectra(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT_koina.mgf"));
+                                }
                             }
                         }
                     }
@@ -1459,6 +1492,45 @@ public class SpectrumMainPanel extends JPanel {
         }
     }
 
+    private HashMap<String, PredictionEntry> importPredictedSpectra(String mgfFile) throws IOException, ClassNotFoundException, MzMLUnmarshallerException, InterruptedException {
+        HashMap<String, PredictionEntry> predictionEntryHashMap = new HashMap<>();
+        BufferedReader br = new BufferedReader(new FileReader(mgfFile));
+        String line;
+        PredictionEntry currentPre = new PredictionEntry();
+        String pepKey = "";
+        ArrayList<Float> preMzs = new ArrayList<>();
+        ArrayList<Float> preInts = new ArrayList<>();
+        while ((line = br.readLine()) != null) {
+            if (line.startsWith("BEGIN IONS")) {
+                currentPre = new PredictionEntry();
+                pepKey = "";
+                preMzs = new ArrayList<>();
+                preInts = new ArrayList<>();
+            } else if (line.startsWith("TITLE")) {
+                pepKey = line.split("TITLE=")[1];
+            } else if (line.startsWith("CHARGE")) {
+                pepKey = pepKey + "|" + line.split("CHARGE=")[1];
+            } else if (line.startsWith("RT")) {
+
+            } else if (line.startsWith("END IONS")) {
+                float[] preMz = new float[preMzs.size()];
+                float[] preInt = new float[preInts.size()];
+                for (int i = 0; i<preMzs.size(); i++){
+                    preMz[i] = preMzs.get(i);
+                    preInt[i] = preInts.get(i);
+                }
+                currentPre.setMzs(preMz);
+                currentPre.setIntensities(preInt);
+                predictionEntryHashMap.put(pepKey, currentPre);
+            } else {
+                String[] splitLine = line.split("\t");
+                preMzs.add(Float.parseFloat(splitLine[0]));
+                preInts.add(Float.parseFloat(splitLine[1]));
+            }
+        }
+        return predictionEntryHashMap;
+    }
+
     private MSnSpectrum getPredictSpectrum(){
         PeptideAssumption peptideAssumption = (PeptideAssumption) spectrumIdentificationAssumption;
         Peptide currentPeptide = peptideAssumption.getPeptide();
@@ -1472,6 +1544,9 @@ public class SpectrumMainPanel extends JPanel {
         modPep = modPep.replaceAll("-COOH", "");
 
         String pepKey = modPep + "|" + peptideAssumption.getIdentificationCharge().value;
+        if (!parentFrame.predictionEntryHashMap.containsKey(pepKey)){
+            pepKey = pepKey.replace("C[57.0214]", "C[57.0215]");
+        }
 
         if (parentFrame.predictionEntryHashMap.containsKey(pepKey)){
 
@@ -1681,11 +1756,17 @@ public class SpectrumMainPanel extends JPanel {
         int maxCharge = 1;
         ArrayList<ModificationMatch> allModifications = new ArrayList<>();
         ArrayList<ModificationMatch> checkPeptideModificationMatches = new ArrayList<>();
+        MSnSpectrum spectrumUsed;
 
         try {
-            if (currentSpectrum != null) {
+            if (showPairedETDScan){
+                spectrumUsed = pairedSpectrum;
+            } else {
+                spectrumUsed = currentSpectrum;
+            }
+            if (spectrumUsed != null) {
 
-                Collection<Peak> peaks = currentSpectrum.getPeakList();
+                Collection<Peak> peaks = spectrumUsed.getPeakList();
 
                 if (peaks == null || peaks.isEmpty()) {
 
@@ -1695,7 +1776,7 @@ public class SpectrumMainPanel extends JPanel {
 
                     if (selectedPsmKey != null) {
                         try {
-                            MSnSpectrum tempSpectrum = currentSpectrum;
+                            MSnSpectrum tempSpectrum = spectrumUsed;
                             if (tempSpectrum.getPeakList() != null) {
                                 lastMzMaximum = tempSpectrum.getMaxMz()*1.05;
                                 newMax = true;
@@ -1711,10 +1792,10 @@ public class SpectrumMainPanel extends JPanel {
                         upperMzZoomRange = spectrumPanel.getXAxisZoomRangeUpperValue();
                     }
 
-                    Precursor precursor = currentSpectrum.getPrecursor();
+                    Precursor precursor = spectrumUsed.getPrecursor();
 
-                    double[] intensitiesAsArray = currentSpectrum.getIntensityValuesNormalizedAsArray();
-                    double[] mzAsArray = currentSpectrum.getMzValuesAsArray();
+                    double[] intensitiesAsArray = spectrumUsed.getIntensityValuesNormalizedAsArray();
+                    double[] mzAsArray = spectrumUsed.getMzValuesAsArray();
 
                     specificAnnotationSettings = annotationSettings.getSpecificAnnotationPreferences(selectedPsmKey, spectrumIdentificationAssumption, SequenceMatchingPreferences.defaultStringMatching, SequenceMatchingPreferences.defaultStringMatching);
                     updateGlycanSetting();
@@ -1727,7 +1808,7 @@ public class SpectrumMainPanel extends JPanel {
                         currentPeptideSequence = tagAssumption.getTag().asSequence();
                         modSequence = tagAssumption.getTag().getTaggedModifiedSequence(searchParameters.getPtmSettings(), false, false, false, false);
 
-                        annotations = tagSpectrumAnnotator.getSpectrumAnnotation(annotationSettings, specificAnnotationSettings, currentSpectrum, tagAssumption.getTag());
+                        annotations = tagSpectrumAnnotator.getSpectrumAnnotation(annotationSettings, specificAnnotationSettings, spectrumUsed, tagAssumption.getTag());
                     } else if (spectrumIdentificationAssumption instanceof PeptideAssumption) {
                         updateAnnotationSettings();
                         updateGlycanSetting();
@@ -1738,7 +1819,7 @@ public class SpectrumMainPanel extends JPanel {
                         modSequence = currentPeptide.getTaggedModifiedSequence(searchParameters.getPtmSettings(), false, false, false, false);
 
                         allModifications = currentPeptide.getModificationMatches();
-                        annotations = peptideSpectrumAnnotator.getSpectrumAnnotationFiter(annotationSettings, specificAnnotationSettings, currentSpectrum, currentPeptide, null, ptmFactory, true);
+                        annotations = peptideSpectrumAnnotator.getSpectrumAnnotationFiter(annotationSettings, specificAnnotationSettings, spectrumUsed, currentPeptide, null, ptmFactory, true);
                     } else {
                         throw new UnsupportedOperationException("Operation not supported for spectrumIdentificationAssumption of type " + spectrumIdentificationAssumption.getClass() + ".");
                     }
@@ -1859,7 +1940,7 @@ public class SpectrumMainPanel extends JPanel {
                         }
                     }
 
-                    for (Double each : currentSpectrum.getIntensityValuesAsArray()){
+                    for (Double each : spectrumUsed.getIntensityValuesAsArray()){
                         allPeakInt += each;
                     }
 
@@ -2051,7 +2132,7 @@ public class SpectrumMainPanel extends JPanel {
 
                         String checkModSequence = peptide.getTaggedModifiedSequence(searchParameters.getPtmSettings(), false, false, false, false);
 
-                        ArrayList<IonMatch> checkAnnotations =  peptideSpectrumAnnotator.getSpectrumAnnotationFiter(annotationSettings, specificAnnotationSettings, currentSpectrum, peptide, null, ptmFactory, null);
+                        ArrayList<IonMatch> checkAnnotations =  peptideSpectrumAnnotator.getSpectrumAnnotationFiter(annotationSettings, specificAnnotationSettings, spectrumUsed, peptide, null, ptmFactory, null);
 
                         double[] checkedMzAsArray = mzAsArray;
                         double[] checkedIntensitiesAsArray = intensitiesAsArray;
@@ -2434,7 +2515,8 @@ public class SpectrumMainPanel extends JPanel {
      * @param spectrum MSNSpectrum
      * @param selectedPsmKey Spectrum key
      */
-    public void updateSpectrum(SpectrumIdentificationAssumption spectrumIdentificationAssumption, MSnSpectrum spectrum, String selectedPsmKey){
+    public void updateSpectrum(SpectrumIdentificationAssumption spectrumIdentificationAssumption, MSnSpectrum spectrum, String selectedPsmKey,
+                               String pairedScanNum, MSnSpectrum pairedSpectrum){
 
         ionsMenu.setEnabled(true);
         otherMenu.setEnabled(true);
@@ -2444,10 +2526,14 @@ public class SpectrumMainPanel extends JPanel {
         exportGraphicsMenu.setEnabled(true);
         switchPaneMenu.setVisible(true);
         switchPaneMenu.setEnabled(true);
+        showPairedETDScanMenuItem.setSelected(false);
+        showPairedETDScan = false;
 
         this.spectrumIdentificationAssumption = spectrumIdentificationAssumption;
         this.currentSpectrum = spectrum;
         this.selectedPsmKey = selectedPsmKey;
+        this.pairedScanNum = pairedScanNum;
+        this.pairedSpectrum = pairedSpectrum;
 
         PeptideAssumption peptideAssumption = (PeptideAssumption) spectrumIdentificationAssumption;
         Peptide currentPeptide = peptideAssumption.getPeptide();
@@ -2599,6 +2685,7 @@ public class SpectrumMainPanel extends JPanel {
         glycanZeroCheckMenuItem.setEnabled(false);
         glycanOneCheckMenuItem.setSelected(false);
         glycanOneCheckMenuItem.setEnabled(false);
+        showPairedETDScanMenuItem.setVisible(false);
 
         for (JCheckBoxMenuItem lossMenuItem : lossMenuMap.values()) {
             lossMenu.remove(lossMenuItem);
@@ -2815,6 +2902,9 @@ public class SpectrumMainPanel extends JPanel {
 
         showAllPeaksMenuItem.setSelected(annotationSettings.showAllPeaks());
         showMatchesPeaksMenuItem.setSelected(showMatchedPeaksOnly);
+        if (pairedScanNum != null){
+            showPairedETDScanMenuItem.setVisible(true);
+        }
     }
 
     private NeutralLoss getPhosphyNeutralLoss(ModificationMatch modificationMatch){

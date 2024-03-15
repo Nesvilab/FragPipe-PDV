@@ -109,6 +109,8 @@ public class ImportData {
      *
      */
     private Boolean hasPredictionSpectra = false;
+    private Boolean useDiaNNPrediction = true;
+    private Boolean hasPairedScanNum = false;
     /**
      *
      */
@@ -244,8 +246,35 @@ public class ImportData {
         }
     }
 
+    private void processMsBooster() throws IOException {
+        if (new File(resultsFolder.getAbsolutePath() + "/msbooster_params.txt").exists()){
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(resultsFolder.getAbsolutePath() + "/msbooster_params.txt"));
+            String line;
+            String[] lineSplit;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                lineSplit = line.split(" = ");
+                if (lineSplit[0].equalsIgnoreCase("useSpectra")){
+                    if (lineSplit[1].equalsIgnoreCase("true")){
+                        hasPredictionSpectra = true;
+                    }
+                }
+                if (lineSplit[0].equalsIgnoreCase("spectraModel")){
+                    if (!lineSplit[1].equalsIgnoreCase("DIA-NN")){
+                        useDiaNNPrediction = false;
+                    }
+                }
+            }
+
+
+        } else {
+            hasPredictionSpectra = false;
+        }
+    }
+
     private void goThroughFolder() throws IOException {
         processManifestFile(latestManiFestFile);
+        processMsBooster();
 
         if (expInformation.contains("inner_defined_empty_exp")){
             expNumList.add("1");
@@ -257,11 +286,9 @@ public class ImportData {
                 add(new File(resultsFolder.getAbsolutePath() + "/protein.fas"));
             }});
 
-            if (new File(resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
-                hasPredictionSpectra = true;
-//                DiannSpeclibReader dslr = new DiannSpeclibReader(resultsFolder.getAbsolutePath() +  "/spectraRT.predicted.bin");
-//                predictionEntryHashMap = dslr.getPreds();
-            }
+//            if (new File(resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
+//                hasPredictionSpectra = true;
+//            }
 
         } else {
             for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
@@ -276,13 +303,9 @@ public class ImportData {
                         add(new File(eachFileInMax.getAbsolutePath() + "/peptide.tsv"));
                         add(new File(eachFileInMax.getAbsolutePath() + "/protein.fas"));
                     }});
-
-                    if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
-                        hasPredictionSpectra = true;
-//                        DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() +  "/spectraRT.predicted.bin");
-//
-//                        predictionEntryHashMap.putAll(dslr.getPreds());
-                    }
+//                    if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
+//                        hasPredictionSpectra = true;
+//                    }
 
                 }
             }
@@ -471,6 +494,10 @@ public class ImportData {
                 }
                 ptmFactory.addUserPTM(ptm);
             }
+        }
+
+        if (psmIndexToName.containsValue("PairedScanNum")){
+            hasPairedScanNum = true;
         }
 
         sqliteConnection.setPSMScoreNum(psmIndexToName.size());
@@ -1116,6 +1143,10 @@ public class ImportData {
             } else if (header.equalsIgnoreCase("Assigned Modifications")) {
                 psmIndexToName.put(i, header.trim().replace(" ", ""));
                 assignenModIndex = i;
+            } else if (header.equalsIgnoreCase("Paired Scan Num")) {
+                hasPairedScanNum = true;
+                String columnName = header.trim().replace(" ", "");
+                psmIndexToName.put(i, columnName);
             } else {
                 if (!header.equals("NA")){
                     String columnName = header.trim().replace(" ", "");
@@ -1358,6 +1389,13 @@ public class ImportData {
 
     public Boolean getHasPredictionSpectra() {
         return hasPredictionSpectra;
+    }
+    public Boolean getUseDiaNNPrediction() {
+        return useDiaNNPrediction;
+    }
+
+    public Boolean getHasPairedScanNum() {
+        return hasPairedScanNum;
     }
 
     public ArrayList<String> getExpInformation() {

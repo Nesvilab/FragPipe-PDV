@@ -325,6 +325,8 @@ public class GUIMainClass extends JFrame {
      *
      */
     public Boolean hasPredictionSpectra = false;
+    public Boolean usedDiaNNPrediction = false;
+    public Boolean hasPairedScanNum = false;
     /**
      *
      */
@@ -3314,6 +3316,42 @@ public class GUIMainClass extends JFrame {
 //        }
     }
 
+    private MSnSpectrum getPairedSpectrum(String spectrumTitle, String pairedScanNum) throws FileParsingException {
+        String pairedSpectrumTitle = spectrumTitle.split("\\.")[0] + "." + pairedScanNum + "." + pairedScanNum + "." + spectrumTitle.split("\\.")[3];
+
+        ScanCollectionDefault currentNum2scan  = scansFileHashMap.get(pairedSpectrumTitle.split("\\.")[0]);
+        IScan iScan = currentNum2scan.getScanByNum(Integer.parseInt(pairedScanNum));
+        ISpectrum iSpectrum = iScan.fetchSpectrum();
+
+        Charge charge = new Charge(1, Integer.parseInt(spectrumTitle.split("\\.")[3]));
+        ArrayList<Charge> charges = new ArrayList<>();
+        charges.add(charge);
+
+        Double precursorInt = 0.0;
+        Double precursorMz = 0.0;
+        PrecursorInfo precursorInfo = iScan.getPrecursor();
+        if (precursorInfo.getIntensity() != null){
+            precursorInt = precursorInfo.getIntensity();
+        }
+        if (precursorInfo.getMzTargetMono() != null){
+            precursorMz = precursorInfo.getMzTargetMono();
+        } else {
+            precursorMz = precursorInfo.getMzTarget();
+        }
+
+        Precursor precursor = new Precursor(iScan.getRt(), precursorMz, precursorInt, charges);
+
+        double[] mzs = iSpectrum.getMZs();
+        double[] ins = iSpectrum.getIntensities();
+        HashMap<Double, Peak> peakHashMap = new HashMap<>();
+        for (int i = 0; i<mzs.length; i++){
+            Peak peak = new Peak(mzs[i], ins[i]);
+            peakHashMap.put(mzs[i], peak);
+        }
+
+        return new MSnSpectrum(2, precursor, pairedScanNum, peakHashMap, pairedSpectrumTitle.split("\\.")[0]);
+    }
+
     /**
      * Get current spectrum according to the selected spectrum key
      * @return MSnSpectrum
@@ -3543,8 +3581,23 @@ public class GUIMainClass extends JFrame {
 
         titledBorder.setTitleFont(new Font("Console", Font.PLAIN, 12));
 
+        String pairedScan = null;
+        MSnSpectrum pairedSpectrum = null;
+        if (hasPairedScanNum) {
+            try {
+                pairedScan = sqliteConnection.getWhatYouWant("SpectrumMatch", selectedPsmKey, new String[]{"PairedScanNum"})[0];
+                if (Objects.equals(pairedScan, " ")){
+                    pairedScan = null;
+                } else {
+                    pairedSpectrum = getPairedSpectrum(sqliteConnection.getSpectrumOldTitle(selectedPsmKey), pairedScan);
+                }
+            } catch (SQLException | FileParsingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         spectrumShowJPanel.setBorder(titledBorder);
-        spectrumMainPanel.updateSpectrum(spectrumIdentificationAssumption, mSnSpectrum, String.valueOf(selectedPsmKey));
+        spectrumMainPanel.updateSpectrum(spectrumIdentificationAssumption, mSnSpectrum, String.valueOf(selectedPsmKey), pairedScan, pairedSpectrum);
 
         spectrumShowJPanel.revalidate();
         spectrumShowJPanel.repaint();
@@ -3583,6 +3636,8 @@ public class GUIMainClass extends JFrame {
                     predictionEntryHashMap = oneImport.getPredictionEntryHashMap();
                     expInformation = oneImport.getExpInformation();
                     hasPredictionSpectra = oneImport.getHasPredictionSpectra();
+                    usedDiaNNPrediction = oneImport.getUseDiaNNPrediction();
+                    hasPairedScanNum = oneImport.getHasPairedScanNum();
 
                     psmScoreName = oneImport.getPSMScoreName();
                     proteinScoreName = oneImport.getProteinScoreName();
