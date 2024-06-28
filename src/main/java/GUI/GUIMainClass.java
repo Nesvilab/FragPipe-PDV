@@ -3654,7 +3654,7 @@ public class GUIMainClass extends JFrame {
                     }
 
                     ArrayList<String> showNames = (ArrayList<String>) Stream.of("SpectrumFile", "Peptide", "ModifiedPeptide", "Retention", "ObservedMass", "ObservedMZ", "CalculatedPeptideMass", "DeltaMass", "Expectation",
-                            "Hyperscore", "Nextscore", "PeptideProphetProbability", "Protein", "Gene").collect(Collectors.toList());
+                            "Hyperscore", "Nextscore", "Probability", "Protein", "Gene").collect(Collectors.toList());
 
                     for (String eachColumn: showNames){
                         if (psmScoreName.contains(eachColumn)){

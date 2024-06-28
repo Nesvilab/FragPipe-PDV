@@ -253,14 +253,14 @@ public class ImportData {
             String[] lineSplit;
 
             while ((line = bufferedReader.readLine()) != null) {
-                lineSplit = line.split(" = ");
-                if (lineSplit[0].equalsIgnoreCase("useSpectra")){
-                    if (lineSplit[1].equalsIgnoreCase("true")){
+                lineSplit = line.split("=");
+                if (lineSplit[0].contains("useSpectra")){
+                    if (lineSplit[1].contains("true")){
                         hasPredictionSpectra = true;
                     }
                 }
-                if (lineSplit[0].equalsIgnoreCase("spectraModel")){
-                    if (!lineSplit[1].equalsIgnoreCase("DIA-NN")){
+                if (lineSplit[0].contains("spectraModel")){
+                    if (!lineSplit[1].contains("DIA-NN")){
                         useDiaNNPrediction = false;
                     }
                 }
@@ -345,22 +345,22 @@ public class ImportData {
                 spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzml")[0], lineSplit[0]);
             } else if (lineSplit[0].endsWith(".raw")){
                 String[] fileArr = lineSplit[0].split(pattern);
-                if (new File(lineSplit[0].replace(".raw", "_uncalibrated.mzml")).exists()){
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_uncalibrated.mzml"));
+                if (new File(lineSplit[0].replace(".raw", "_uncalibrated.mzML")).exists()){
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_uncalibrated.mzML"));
                 } else {
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_calibrated.mzml"));
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_calibrated.mzML"));
                 }
 
             } else if (lineSplit[0].endsWith(".d") && Objects.equals(lineSplit[3], "DDA")){
                 String[] fileArr = lineSplit[0].split(pattern);
-                if (new File(lineSplit[0].replace(".d", "_uncalibrated.mzml")).exists()){
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_uncalibrated.mzml"));
+                if (new File(lineSplit[0].replace(".d", "_uncalibrated.mzML")).exists()){
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_uncalibrated.mzML"));
                 } else {
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_calibrated.mzml"));
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_calibrated.mzML"));
                 }
             } else if (lineSplit[0].endsWith(".d") && Objects.equals(lineSplit[3], "DIA")){
                 String[] fileArr = lineSplit[0].split(pattern);
-                if (new File(lineSplit[0].replace(".d", "_centric_calibrated.mzml")).exists()){
+                if (new File(lineSplit[0].replace(".d", "_centric_calibrated.mzML")).exists()){
                     spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric_calibrated.mzML"));
                 } else {
                     spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric.mzML"));
@@ -539,7 +539,6 @@ public class ImportData {
                             null, "The peptide.tsv are occupied by other programs or unavailable now.",
                             "Error Parsing File", JOptionPane.ERROR_MESSAGE);
                 }
-
             }
 
         }
@@ -1167,41 +1166,43 @@ public class ImportData {
             }
         }
 
-        BufferedReader proteinBufferedReader = new BufferedReader(new FileReader(oneProteinTable));
-        String[] proteinHeaders = proteinBufferedReader.readLine().trim().split("\t");
+        if (Files.exists(oneProteinTable.toPath())) {
+            BufferedReader proteinBufferedReader = new BufferedReader(new FileReader(oneProteinTable));
+            String[] proteinHeaders = proteinBufferedReader.readLine().trim().split("\t");
 
-        for (int i = 0; i < proteinHeaders.length; i++) {
+            for (int i = 0; i < proteinHeaders.length; i++) {
 
-            String header = proteinHeaders[i];
+                String header = proteinHeaders[i];
 
-            if (header.equalsIgnoreCase("Protein")) {
-                proteinIndex = i;
-            } else {
-                String columnName = header.trim().replace(" ", "");
-                if (columnName.matches(".*\\d+.*")){
+                if (header.equalsIgnoreCase("Protein")) {
+                    proteinIndex = i;
+                } else {
+                    String columnName = header.trim().replace(" ", "");
+                    if (columnName.matches(".*\\d+.*")) {
 
-                    columnName = "'" + columnName + "'";
-                }
-                columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
-                if (columnName.equals("Group")){
-                    columnName = "ProteinGroup";
-                }
-
-                if (!columnName.equals("NA")){
-                    if (proteinColumnNames.containsKey(columnName)){
-                        int colCount = proteinColumnNames.get(columnName);
-                        columnName = columnName + "_" + (colCount + 1);
-                        proteinColumnNames.put(columnName, colCount + 1);
-                    } else {
-                        proteinColumnNames.put(columnName, 0);
+                        columnName = "'" + columnName + "'";
                     }
-                    proteinIndexToName.put(i, columnName);
+                    columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
+                    if (columnName.equals("Group")) {
+                        columnName = "ProteinGroup";
+                    }
+
+                    if (!columnName.equals("NA")) {
+                        if (proteinColumnNames.containsKey(columnName)) {
+                            int colCount = proteinColumnNames.get(columnName);
+                            columnName = columnName + "_" + (colCount + 1);
+                            proteinColumnNames.put(columnName, colCount + 1);
+                        } else {
+                            proteinColumnNames.put(columnName, 0);
+                        }
+                        proteinIndexToName.put(i, columnName);
+                    }
                 }
             }
+            proteinBufferedReader.close();
         }
 
         pSMBufferedReader.close();
-        proteinBufferedReader.close();
 
     }
 
@@ -1296,6 +1297,10 @@ public class ImportData {
 
         for (String each_exp : resultsDict.keySet()){
             File proteinSeqFile = resultsDict.get(each_exp).get(3);
+            if (!Files.exists(proteinSeqFile.toPath())){
+                proteinSeqMap.put("empty", "empty");
+                continue;
+            }
             BufferedReader bufferedReader = new BufferedReader(new FileReader(proteinSeqFile));
 
             String line;

@@ -1492,7 +1492,7 @@ public class SpectrumMainPanel extends JPanel {
         }
     }
 
-    private HashMap<String, PredictionEntry> importPredictedSpectra(String mgfFile) throws IOException, ClassNotFoundException, MzMLUnmarshallerException, InterruptedException {
+    private HashMap<String, PredictionEntry> importPredictedSpectra(String mgfFile) throws IOException {
         HashMap<String, PredictionEntry> predictionEntryHashMap = new HashMap<>();
         BufferedReader br = new BufferedReader(new FileReader(mgfFile));
         String line;
