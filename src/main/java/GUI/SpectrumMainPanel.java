@@ -25,6 +25,7 @@ import com.compomics.util.gui.spectrum.SpectrumPanel;
 import com.compomics.util.preferences.LastSelectedFolder;
 import com.compomics.util.preferences.SequenceMatchingPreferences;
 import com.compomics.util.preferences.UtilitiesUserPreferences;
+import org.apache.commons.lang.math.NumberUtils;
 import uk.ac.ebi.jmzml.xml.io.MzMLUnmarshallerException;
 import umich.ms.fileio.filetypes.diann.DiannSpeclibReader;
 import umich.ms.fileio.filetypes.diann.PredictionEntry;
@@ -1546,6 +1547,14 @@ public class SpectrumMainPanel extends JPanel {
         String pepKey = modPep + "|" + peptideAssumption.getIdentificationCharge().value;
         if (!parentFrame.predictionEntryHashMap.containsKey(pepKey)){
             pepKey = pepKey.replace("C[57.0214]", "C[57.0215]");
+        }
+
+        if (pepKey.contains("-")){ // Add this block to fix N-term Modification bug
+            String nTermMod = pepKey.split("-")[0];
+            if (NumberUtils.isNumber(nTermMod)) {
+                String restStr = pepKey.split("-")[1];
+                pepKey = "[" + nTermMod + "]" + restStr;
+            }
         }
 
         if (parentFrame.predictionEntryHashMap.containsKey(pepKey)){
