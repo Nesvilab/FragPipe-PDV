@@ -360,16 +360,11 @@ public class ImportData {
                 }
             } else if (lineSplit[0].endsWith(".d") && Objects.equals(lineSplit[3], "DIA")){
                 String[] fileArr = lineSplit[0].split(pattern);
-                if (new File(lineSplit[0].replace(".d", "_diatracer_calibrated.mzML")).exists()){
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_diatracer", lineSplit[0].replace(".d", "_diatracer_calibrated.mzML"));
+                if (new File(lineSplit[0].replace(".d", "_centric_calibrated.mzML")).exists()){
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric_calibrated.mzML"));
                 } else {
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_diatracer", lineSplit[0].replace(".d", "_diatracer.mzML"));
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric.mzML"));
                 }
-//                if (new File(lineSplit[0].replace(".d", "_centric_calibrated.mzML")).exists()){
-//                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric_calibrated.mzML"));
-//                } else {
-//                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_centric", lineSplit[0].replace(".d", "_centric.mzML"));
-//                }
             }
 
             if (Objects.equals(lineSplit[1], "") || Objects.equals(lineSplit[3], "DIA")){
