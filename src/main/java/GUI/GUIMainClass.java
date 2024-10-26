@@ -325,7 +325,7 @@ public class GUIMainClass extends JFrame {
      *
      */
     public Boolean hasPredictionSpectra = false;
-    public Boolean usedDiaNNPrediction = false;
+    public String predictedFileName;
     public Boolean hasPairedScanNum = false;
     /**
      *
@@ -3636,7 +3636,7 @@ public class GUIMainClass extends JFrame {
                     predictionEntryHashMap = oneImport.getPredictionEntryHashMap();
                     expInformation = oneImport.getExpInformation();
                     hasPredictionSpectra = oneImport.getHasPredictionSpectra();
-                    usedDiaNNPrediction = oneImport.getUseDiaNNPrediction();
+                    predictedFileName = oneImport.getUseDiaNNPrediction();
                     hasPairedScanNum = oneImport.getHasPairedScanNum();
 
                     psmScoreName = oneImport.getPSMScoreName();

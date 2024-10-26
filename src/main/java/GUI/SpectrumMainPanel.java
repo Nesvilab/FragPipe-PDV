@@ -1396,23 +1396,23 @@ public class SpectrumMainPanel extends JPanel {
                 parentFrame.loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/loading.gif")));
                 parentFrame.loadingJButton.setText("Loading predicted spectra.");
                 if (parentFrame.expInformation.contains("inner_defined_empty_exp")) {
-                    if (parentFrame.usedDiaNNPrediction) {
-                        DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin");
+                    if (parentFrame.predictedFileName.endsWith("bin")){
+                        DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/" + parentFrame.predictedFileName);
                         parentFrame.predictionEntryHashMap = dslr.getPreds();
                     } else {
-                        parentFrame.predictionEntryHashMap = importPredictedSpectra(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT_koina.mgf");
+                        parentFrame.predictionEntryHashMap = importPredictedSpectra(parentFrame.resultsFolder.getAbsolutePath() + "/" + parentFrame.predictedFileName);
                     }
                 } else {
                     for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
                         if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
-                            if (parentFrame.usedDiaNNPrediction) {
-                                if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()) {
-                                    DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin");
+                            if (parentFrame.predictedFileName.endsWith("bin")){
+                                if (new File(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName).exists()) {
+                                    DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName);
                                     parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
                                 }
                             } else {
-                                if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT_koina.mgf").exists()) {
-                                    parentFrame.predictionEntryHashMap.putAll(importPredictedSpectra(parentFrame.resultsFolder.getAbsolutePath() + "/spectraRT_koina.mgf"));
+                                if (new File(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName).exists()) {
+                                    parentFrame.predictionEntryHashMap.putAll(importPredictedSpectra(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName));
                                 }
                             }
                         }
@@ -1512,6 +1512,8 @@ public class SpectrumMainPanel extends JPanel {
             } else if (line.startsWith("CHARGE")) {
                 pepKey = pepKey + "|" + line.split("CHARGE=")[1];
             } else if (line.startsWith("RT")) {
+
+            } else if (line.startsWith("1/K0")) {
 
             } else if (line.startsWith("END IONS")) {
                 float[] preMz = new float[preMzs.size()];
@@ -2438,9 +2440,9 @@ public class SpectrumMainPanel extends JPanel {
         final int peptideLength = length;
 
         if (!isDown){
-            sequenceFragmentationPanel.setBounds(40,10, peptideLength*fontHeight*2 ,fontHeight * 5);
+            sequenceFragmentationPanel.setBounds(40,10, peptideLength*fontHeight*2 ,fontHeight * 8);
         } else {
-            sequenceFragmentationPanel.setBounds(40,spectrumShowPanel.getHeight() -fontHeight * 7, peptideLength*fontHeight*2 ,fontHeight * 5);
+            sequenceFragmentationPanel.setBounds(40,spectrumShowPanel.getHeight() -fontHeight * 7, peptideLength*fontHeight*2 ,fontHeight * 8);
         }
 
         sequenceFragmentationPanel.addMouseWheelListener(e -> {

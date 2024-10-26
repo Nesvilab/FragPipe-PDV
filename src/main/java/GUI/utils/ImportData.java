@@ -109,7 +109,7 @@ public class ImportData {
      *
      */
     private Boolean hasPredictionSpectra = false;
-    private Boolean useDiaNNPrediction = true;
+    private String predictedFileName;
     private Boolean hasPairedScanNum = false;
     /**
      *
@@ -259,11 +259,18 @@ public class ImportData {
                         hasPredictionSpectra = true;
                     }
                 }
-                if (lineSplit[0].contains("spectraModel")){
-                    if (!lineSplit[1].contains("DIA-NN")){
-                        useDiaNNPrediction = false;
+                if (lineSplit[0].contains("spectraPredFile")){
+                    String fileSeparator = "/";
+                    if (lineSplit[1].contains("\\")){
+                        fileSeparator = "\\\\";
                     }
+                    predictedFileName = lineSplit[1].split(fileSeparator)[lineSplit[1].split(fileSeparator).length-1];
                 }
+//                if (lineSplit[0].contains("spectraModel")){
+//                    if (!lineSplit[1].contains("DIA-NN")){
+//                        useDiaNNPrediction = false;
+//                    }
+//                }
             }
 
 
@@ -1395,8 +1402,8 @@ public class ImportData {
     public Boolean getHasPredictionSpectra() {
         return hasPredictionSpectra;
     }
-    public Boolean getUseDiaNNPrediction() {
-        return useDiaNNPrediction;
+    public String getUseDiaNNPrediction() {
+        return predictedFileName;
     }
 
     public Boolean getHasPairedScanNum() {
