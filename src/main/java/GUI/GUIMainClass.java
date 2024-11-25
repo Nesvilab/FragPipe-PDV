@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import GUI.Export.ExportBatchDialog;
+import GUI.Export.ExportFragments;
 import GUI.Export.RealTimeExportJDialog;
 import GUI.utils.ExperimentTableModel;
 import GUI.utils.ImportData;
@@ -377,7 +378,7 @@ public class GUIMainClass extends JFrame {
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.META_DOWN_MASK), DefaultEditorKit.pasteAction);
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.META_DOWN_MASK), DefaultEditorKit.cutAction);
         try {
-            new GUIMainClass(args[0], args[1]);
+            new GUIMainClass(args[0], args[1], args[2]);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(
                     null, e.getMessage(),
@@ -386,19 +387,28 @@ public class GUIMainClass extends JFrame {
         }
     }
 
-    public GUIMainClass(String resultsPath, String threadsNumber){
+    public GUIMainClass(String resultsPath, String threadsNumber, String function){
 
         resultsFolder = new File(resultsPath);
         this.threadsNumber = Integer.parseInt(threadsNumber);
 
         initParameters();
 
-        spectrumMainPanel = new SpectrumMainPanel(this);
+        if (function.equals("r")){
+            try {
+                ExportFragments exportFragments = new ExportFragments(resultsFolder, annotationSettings, this.threadsNumber, this);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(0);
+            }
+        } else {
+            spectrumMainPanel = new SpectrumMainPanel(this);
 
-        initComponents();
-        setVisible(true);
+            initComponents();
+            setVisible(true);
 
-        importData();
+            importData();
+        }
 
     }
 
