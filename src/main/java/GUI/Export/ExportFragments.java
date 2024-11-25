@@ -317,6 +317,9 @@ public class ExportFragments {
                     bufferedWriter.write("\t" + ionsNames + "\t" + ionsMz + "\t" + ionsInt + "\n");
                 }
                 bufferedWriter.close();
+
+                onePSMTable.delete();
+                onePSMTableWithMatch.renameTo(onePSMTable);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
