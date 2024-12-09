@@ -108,58 +108,39 @@ public class ExportFragments {
     private void importData() throws IOException {
         String manifestFile = versionCheck();
 
-        ProgressDialogX progressDialog = new ProgressDialogX(parentFrame,
-                Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMass.png")),
-                Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icons/SeaGullMassWait.png")),
-                true);
-        progressDialog.setPrimaryProgressCounterIndeterminate(false);
-        progressDialog.setTitle("Exporting. Please Wait...");
-
-        new Thread(new Runnable() {
-            public void run() {
-                progressDialog.setVisible(true);
-            }
-        }, "ProgressDialog").start();
-
         if (manifestFile != null) {
 
             goThroughFolder();
             getTableIndexes();
-            progressDialog.setMaxPrimaryProgressCounter(spectrumFileMap.size() + expNumList.size()*3);
-            new Thread("Export") {
-                @Override
-                public void run() {
-                    try {
-                        readRawFiles(progressDialog);
-                        goThroughPSM(progressDialog);
-                        getAnnotations(progressDialog);
-                        writeAnnotations(progressDialog);
-                    } catch (IOException | FileParsingException | SQLException | InterruptedException |
-                             ClassNotFoundException | ExecutionException e) {
-                        progressDialog.setRunCanceled();
-                        System.exit(1);
-                        throw new RuntimeException(e);
-                    }
-                    progressDialog.setRunFinished();
-                    System.exit(0);
-                }
-            }.start();
 
+            if (psmIndexToName.containsValue("ionint") && psmIndexToName.containsValue("ionmz")){
+                System.out.println("The file has already been annotated.");
+                System.exit(1);
+            }
+
+            try {
+                readRawFiles();
+                goThroughPSM();
+                getAnnotations();
+                writeAnnotations();
+            } catch (IOException | FileParsingException | SQLException | InterruptedException |
+                     ClassNotFoundException | ExecutionException e) {
+                System.exit(1);
+                throw new RuntimeException(e);
+            }
+            System.exit(0);
         }
 
     }
 
-    private void readRawFiles(ProgressDialogX progressDialog){
+    private void readRawFiles(){
         for (String spectrumName : spectrumFileMap.keySet()){
-            progressDialog.setSecondaryProgressText("Reading " + spectrumName + " file");
-            if (progressDialog.isRunCanceled()){
-                break;
-            }
+            System.out.println("Reading mzML: " + spectrumName);
             File eachFile = new File(spectrumFileMap.get(spectrumName));
             if (eachFile.exists()) {
                 if (eachFile.getName().endsWith(".mzML")) {
                     MZMLFile mzmlFile = new MZMLFile(spectrumFileMap.get(spectrumName));
-                    mzmlFile.setNumThreadsForParsing(10);
+                    mzmlFile.setNumThreadsForParsing(threadNum);
                     ScanCollectionDefault scans = new ScanCollectionDefault();
                     scans.setDefaultStorageStrategy(StorageStrategy.SOFT);
                     scans.isAutoloadSpectra(true);
@@ -172,7 +153,6 @@ public class ExportFragments {
                     }
                 }
             }
-            progressDialog.increasePrimaryProgressCounter();
 
         }
 
@@ -214,12 +194,10 @@ public class ExportFragments {
         return new MSnSpectrum(2, precursor, spectrumTitle.split("\\.")[1], peakHashMap, spectrumFileName);
     }
 
-    private void goThroughPSM(ProgressDialogX progressDialog) throws IOException, FileParsingException, SQLException, InterruptedException, ClassNotFoundException {
+    private void goThroughPSM() throws IOException, FileParsingException, SQLException, InterruptedException, ClassNotFoundException {
         for (String expNum : resultsDict.keySet()) {
-            progressDialog.setSecondaryProgressText("Reading " + expNum + " PSM file");
-            if (progressDialog.isRunCanceled()){
-                break;
-            }
+            System.out.println("Reading " + expNum);
+
             File oneProteinTable = resultsDict.get(expNum).get(0);
             File onePSMTable = resultsDict.get(expNum).get(1);
             File onePeptideTable = resultsDict.get(expNum).get(2);
@@ -274,18 +252,15 @@ public class ExportFragments {
                 psmDataHashMap.put(expNum, onePSMData);
 //                bufferedWriter.close();
                 bufferedReader.close();
-                progressDialog.increasePrimaryProgressCounter();
             }
         }
     }
 
-    private void writeAnnotations(ProgressDialogX progressDialog){
+    private void writeAnnotations(){
         DecimalFormat df = new DecimalFormat("#.####");
+        DecimalFormat dfInt = new DecimalFormat("#.#");
         for (String expNum : psmDataHashMap.keySet()){
-            progressDialog.setSecondaryProgressText("Writing " + expNum + " PSM file");
-            if (progressDialog.isRunCanceled()){
-                break;
-            }
+            System.out.println("Writing " + expNum);
             ArrayList<String[]> onePSMData = psmDataHashMap.get(expNum);
             ArrayList<IonMatch>[] ionMatches = ionMatchesHashMap.get(expNum);
             File onePSMTable = resultsDict.get(expNum).get(1);
@@ -305,11 +280,11 @@ public class ExportFragments {
 
                     ArrayList<String> ionsNames = new ArrayList<>();
                     ArrayList<String> ionsMz = new ArrayList<>();
-                    ArrayList<Double> ionsInt = new ArrayList<>();
+                    ArrayList<String> ionsInt = new ArrayList<>();
                     for (IonMatch ionMatch : ionMatches[i]){
                         ionsNames.add(ionMatch.getPeakAnnotation());
                         ionsMz.add(df.format(ionMatch.peak.mz));
-                        ionsInt.add(ionMatch.peak.intensity);
+                        ionsInt.add(dfInt.format(ionMatch.peak.intensity));
                     }
                     if (lineSplit.length != columnNum){
                         bufferedWriter.write("\t\t");
@@ -323,18 +298,15 @@ public class ExportFragments {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            progressDialog.increasePrimaryProgressCounter();
         }
 
     }
 
-    private void getAnnotations(ProgressDialogX progressDialog) throws InterruptedException, ExecutionException {
+    private void getAnnotations() throws InterruptedException, ExecutionException {
         ExecutorService executorService = Executors.newFixedThreadPool(threadNum);
         for (String expNum : psmDataHashMap.keySet()){
-            progressDialog.setSecondaryProgressText("Annotating " + expNum + " PSM file");
-            if (progressDialog.isRunCanceled()){
-                break;
-            }
+            System.out.println("Annotating " + expNum);
+
             ArrayList<String[]> onePSMData = psmDataHashMap.get(expNum);
             ArrayList<IonMatch>[] ionMatches = new ArrayList[onePSMData.size()];
             ArrayList<ArrayList<Integer>> psmIndexMulti = splitIntoSublists(onePSMData.size(), threadNum);
@@ -347,7 +319,6 @@ public class ExportFragments {
                 future.get();
             }
             ionMatchesHashMap.put(expNum, ionMatches);
-            progressDialog.increasePrimaryProgressCounter();
         }
     }
 
