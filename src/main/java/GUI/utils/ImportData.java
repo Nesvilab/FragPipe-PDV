@@ -96,7 +96,15 @@ public class ImportData {
     /**
      * Index to name
      */
+    private HashMap<String, HashMap<Integer, String>> proteinIndexToNameDic = new HashMap<>();
+    /**
+     * Index to name
+     */
     private HashMap<Integer, String> psmIndexToName = new HashMap<>();
+    /**
+     * Index to name
+     */
+    private HashMap<String, HashMap<Integer, String>> psmIndexToNameDic = new HashMap<>();
     /**
      *
      */
@@ -109,6 +117,10 @@ public class ImportData {
      *
      */
     private Boolean hasPredictionSpectra = false;
+    /**
+     *
+     */
+    private Boolean runSpecLib = false;
     private String predictedFileName;
     private Boolean hasPairedScanNum = false;
     /**
@@ -280,6 +292,18 @@ public class ImportData {
     }
 
     private void goThroughFolder() throws IOException {
+
+        ArrayList<String> logFiles = new ArrayList<>();
+
+        for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
+            if (eachFileInMax.getName().endsWith("txt") && eachFileInMax.getName().startsWith("log_")){
+                logFiles.add(eachFileInMax.getName());
+            }
+        }
+        logFiles.sort(Collections.reverseOrder());
+        String latestLogFile = logFiles.get(0);
+        processLog(resultsFolder.getAbsolutePath() + "/" + latestLogFile);
+
         processManifestFile(latestManiFestFile);
         processMsBooster();
 
@@ -314,6 +338,20 @@ public class ImportData {
 //                        hasPredictionSpectra = true;
 //                    }
 
+                }
+            }
+        }
+    }
+
+    private void processLog(String latestLogFile) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(latestLogFile));
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            if (line.startsWith("speclibgen.run-speclibgen")){
+                if (Objects.equals(line.split("run-speclibgen=")[1], "false")){
+                    runSpecLib = false;
+                } else {
+                    runSpecLib = true;
                 }
             }
         }
@@ -374,7 +412,7 @@ public class ImportData {
                 }
             }
 
-            if (Objects.equals(lineSplit[1], "") || Objects.equals(lineSplit[3], "DIA")){
+            if (Objects.equals(lineSplit[1], "") || runSpecLib){
                 expName = "inner_defined_empty_exp";
             } else {
                 if (Objects.equals(lineSplit[2], "")) {

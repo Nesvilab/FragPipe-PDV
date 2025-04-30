@@ -1782,6 +1782,7 @@ public class GUIMainClass extends JFrame {
                     } else {
                         searchItemTextField.setText("No Match!");
                     }
+
                 } catch (Exception e){
                     e.printStackTrace();
                     progressDialogX.setRunFinished();
@@ -2222,7 +2223,6 @@ public class GUIMainClass extends JFrame {
                 currentExpAllSelections.addAll(expAllSelections);
                 buttonCheck();
                 try {
-                    System.out.println(expAllSelections);
                     if (expAllSelections.size() == 0){
                         newList.add(selectedExpKey);
                     } else {
@@ -2302,52 +2302,54 @@ public class GUIMainClass extends JFrame {
         String selectedProteinKey;
         selectedPSMPageNum = 1;
 
-        if (!nonProteinSearchMode) {
-            if (row != -1) {
-                this.setCursor(new Cursor(Cursor.WAIT_CURSOR));
+        if (nonProteinSearchMode && !Objects.equals(findType, "Protein (String)")){
+            searchItemTextField.setText("");
+        }
 
-                selectedProteinKey = (String) proteinsJTable.getValueAt(row, 1);
+        if (row != -1) {
+            this.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-                if (column == proteinsJTable.getColumn("Selected").getModelIndex()){
-                    if (!proteinKeyToSelected.containsKey(selectedProteinKey)) {
+            selectedProteinKey = (String) proteinsJTable.getValueAt(row, 1);
+
+            if (column == proteinsJTable.getColumn("Selected").getModelIndex()){
+                if (!proteinKeyToSelected.containsKey(selectedProteinKey)) {
+                    proteinAllSelections.add(selectedProteinKey);
+                    proteinKeyToSelected.put(selectedProteinKey, true);
+                } else {
+                    Boolean isSelected = proteinKeyToSelected.get(selectedProteinKey);
+                    if (isSelected) {
+                        proteinKeyToSelected.put(selectedProteinKey, false);
+                        remove(proteinAllSelections, selectedProteinKey);
+                    } else {
                         proteinAllSelections.add(selectedProteinKey);
                         proteinKeyToSelected.put(selectedProteinKey, true);
-                    } else {
-                        Boolean isSelected = proteinKeyToSelected.get(selectedProteinKey);
-                        if (isSelected) {
-                            proteinKeyToSelected.put(selectedProteinKey, false);
-                            remove(proteinAllSelections, selectedProteinKey);
-                        } else {
-                            proteinAllSelections.add(selectedProteinKey);
-                            proteinKeyToSelected.put(selectedProteinKey, true);
-                        }
                     }
-                    buttonCheck();
                 }
-
-                try {
-                    if (sqliteConnection.getSpectrumListOneProtein(selectedProteinKey) == null){
-                        raiseWarningDialog("There is no PSM for this protein.");
-                    } else {
-                        updateAllPSMIndexes(sqliteConnection.getSpectrumListOneProtein(selectedProteinKey));
-                        updatePSMTable();
-                        proteinCurrentSelections = new ArrayList<>();
-                        proteinCurrentSelections.add(selectedProteinKey);
-
-                        updateCoverage(proteinCurrentSelections);
-                        showAllSelectedProteinsJButton.setBackground(Color.WHITE);
-
-                        proteinsJTable.revalidate();
-                        proteinsJTable.repaint();
-                    }
-
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-
-                this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                buttonCheck();
             }
+
+            try {
+                if (sqliteConnection.getSpectrumListOneProtein(selectedProteinKey) == null){
+                    raiseWarningDialog("There is no PSM for this protein.");
+                } else {
+                    updateAllPSMIndexes(sqliteConnection.getSpectrumListOneProtein(selectedProteinKey));
+                    updatePSMTable();
+                    proteinCurrentSelections = new ArrayList<>();
+                    proteinCurrentSelections.add(selectedProteinKey);
+
+                    updateCoverage(proteinCurrentSelections);
+                    showAllSelectedProteinsJButton.setBackground(Color.WHITE);
+
+                    proteinsJTable.revalidate();
+                    proteinsJTable.repaint();
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+
+            this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
         }
     }
 
@@ -2361,39 +2363,42 @@ public class GUIMainClass extends JFrame {
         String selectedProteinKey;
         selectedPSMPageNum = 1;
 
-        if (!nonProteinSearchMode) {
-            if (evt == null || evt.getKeyCode() == KeyEvent.VK_UP || evt.getKeyCode() == KeyEvent.VK_DOWN
-                    || evt.getKeyCode() == KeyEvent.VK_PAGE_UP || evt.getKeyCode() == KeyEvent.VK_PAGE_DOWN) {
+        if (nonProteinSearchMode && !Objects.equals(findType, "Protein (String)")){
+            searchItemTextField.setText("");
+        }
 
-                final int row = proteinsJTable.getSelectedRow();
 
-                if (row != -1) {
-                    this.setCursor(new Cursor(Cursor.WAIT_CURSOR));
+        if (evt == null || evt.getKeyCode() == KeyEvent.VK_UP || evt.getKeyCode() == KeyEvent.VK_DOWN
+                || evt.getKeyCode() == KeyEvent.VK_PAGE_UP || evt.getKeyCode() == KeyEvent.VK_PAGE_DOWN) {
 
-                    selectedProteinKey = (String) proteinsJTable.getValueAt(row, 1);
+            final int row = proteinsJTable.getSelectedRow();
 
-                    try {
-                        if (sqliteConnection.getSpectrumListOneProtein(selectedProteinKey) == null){
-                            raiseWarningDialog("There is no PSM for this protein.");
-                        } else {
-                            updateAllPSMIndexes(sqliteConnection.getSpectrumListOneProtein(selectedProteinKey));
-                            updatePSMTable();
+            if (row != -1) {
+                this.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-                            proteinCurrentSelections = new ArrayList<>();
-                            proteinCurrentSelections.add(selectedProteinKey);
+                selectedProteinKey = (String) proteinsJTable.getValueAt(row, 1);
 
-                            updateCoverage(proteinCurrentSelections);
-                            showAllSelectedProteinsJButton.setBackground(Color.WHITE);
+                try {
+                    if (sqliteConnection.getSpectrumListOneProtein(selectedProteinKey) == null){
+                        raiseWarningDialog("There is no PSM for this protein.");
+                    } else {
+                        updateAllPSMIndexes(sqliteConnection.getSpectrumListOneProtein(selectedProteinKey));
+                        updatePSMTable();
 
-                            proteinsJTable.revalidate();
-                            proteinsJTable.repaint();
+                        proteinCurrentSelections = new ArrayList<>();
+                        proteinCurrentSelections.add(selectedProteinKey);
 
-                        }
-                    } catch (SQLException e) {
-                        e.printStackTrace();
+                        updateCoverage(proteinCurrentSelections);
+                        showAllSelectedProteinsJButton.setBackground(Color.WHITE);
+
+                        proteinsJTable.revalidate();
+                        proteinsJTable.repaint();
+
                     }
-                    this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
+                this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
             }
         }
     }
@@ -2619,8 +2624,8 @@ public class GUIMainClass extends JFrame {
 
         ArrayList<ArrayList<Object>> selectedPSMItem = new ArrayList<>();
         ArrayList<ArrayList<Object>> selectedProteinItem = new ArrayList<>();
+        ArrayList<String> selectPageProteinIndex = new ArrayList<>();
         selectPageSpectrumIndex = new ArrayList<>();
-        selectPageProteinIndex = new ArrayList<>();
 
         proteinsJTable.removeAll();
         spectrumJTable.removeAll();
@@ -2638,11 +2643,17 @@ public class GUIMainClass extends JFrame {
                 e.printStackTrace();
             }
         }
-        proteinTableModel.updateTable(selectedProteinItem, selectPageProteinIndex, proteinKeyToSelected);
-        ((DefaultTableModel) proteinsJTable.getModel()).fireTableDataChanged();
-        proteinsJTable.repaint();
-        proteinsJTable.setRowSelectionInterval(0, 0);
-        proteinJTableMouseReleased(null);
+
+        if (!nonProteinSearchMode){
+            proteinTableModel.updateTable(selectedProteinItem, selectPageProteinIndex, proteinKeyToSelected);
+            ((DefaultTableModel) proteinsJTable.getModel()).fireTableDataChanged();
+            proteinsJTable.repaint();
+            proteinsJTable.setRowSelectionInterval(0, 0);
+            proteinJTableMouseReleased(null);
+
+            selectedProteinPageNum = 1;
+            proteinPageNumJTextField.setText("1/1");
+        }
 
         psmTableModel.updateTable(selectedPSMItem, selectPageSpectrumIndex, spectrumKeyToSelected, mappedSpectrumIndex);
         ((DefaultTableModel) spectrumJTable.getModel()).fireTableDataChanged();
@@ -2653,9 +2664,7 @@ public class GUIMainClass extends JFrame {
         spectrumJTableMouseReleased(null);
 
         selectedPSMPageNum = 1;
-        selectedProteinPageNum = 1;
 
-        proteinPageNumJTextField.setText("1/1");
         buttonCheck();
 
         pSMPageNumJTextField.setText("1/1");
@@ -3758,7 +3767,7 @@ public class GUIMainClass extends JFrame {
                         }
                     } else {
                         JOptionPane.showMessageDialog(
-                                null, "Invalid spectrum file path, please check it.",
+                                null, "Invalid spectrum file path in fragpipe-files.fp-manifest.\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
                                 "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
                         if (addNewFile){
                             importNewFileDialog.setRunFinished();
@@ -3782,13 +3791,13 @@ public class GUIMainClass extends JFrame {
                 readSpectrumFile(spectralFilePath, spectrumFileName);
             } else {
                 JOptionPane.showMessageDialog(
-                        null, "Invalid spectrum file path, please check it.",
+                        null, "Invalid spectrum file path in fragpipe-files.fp-manifest.\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
                         "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
                 progressDialog.setRunFinished();
             }
         } catch (Exception e){
             JOptionPane.showMessageDialog(
-                    null, "Invalid spectrum file path, please check it.",
+                    null, "Invalid spectrum file path in fragpipe-files.fp-manifest.\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
                     "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
             progressDialog.setRunFinished();
         }

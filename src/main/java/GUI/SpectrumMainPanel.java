@@ -1395,29 +1395,14 @@ public class SpectrumMainPanel extends JPanel {
             if (parentFrame.predictionEntryHashMap.size() == 0) {
                 parentFrame.loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/loading.gif")));
                 parentFrame.loadingJButton.setText("Loading predicted spectra.");
-                if (parentFrame.expInformation.contains("inner_defined_empty_exp")) {
-                    if (parentFrame.predictedFileName.endsWith("bin")){
-                        DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/" + parentFrame.predictedFileName);
-                        parentFrame.predictionEntryHashMap = dslr.getPreds();
-                    } else {
-                        parentFrame.predictionEntryHashMap = importPredictedSpectra(parentFrame.resultsFolder.getAbsolutePath() + "/" + parentFrame.predictedFileName);
-                    }
+
+                if (parentFrame.predictedFileName.endsWith("bin")){
+                    DiannSpeclibReader dslr = new DiannSpeclibReader(parentFrame.resultsFolder.getAbsolutePath() + "/MSBooster/" + parentFrame.predictedFileName);
+                    parentFrame.predictionEntryHashMap = dslr.getPreds();
                 } else {
-                    for (File eachFileInMax : Objects.requireNonNull(parentFrame.resultsFolder.listFiles())) {
-                        if (parentFrame.expInformation.contains(eachFileInMax.getName())) {
-                            if (parentFrame.predictedFileName.endsWith("bin")){
-                                if (new File(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName).exists()) {
-                                    DiannSpeclibReader dslr = new DiannSpeclibReader(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName);
-                                    parentFrame.predictionEntryHashMap.putAll(dslr.getPreds());
-                                }
-                            } else {
-                                if (new File(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName).exists()) {
-                                    parentFrame.predictionEntryHashMap.putAll(importPredictedSpectra(eachFileInMax.getAbsolutePath() + "/" + parentFrame.predictedFileName));
-                                }
-                            }
-                        }
-                    }
+                    parentFrame.predictionEntryHashMap = importPredictedSpectra(parentFrame.resultsFolder.getAbsolutePath() + "/MSBooster/" + parentFrame.predictedFileName);
                 }
+
                 parentFrame.loadingJButton.setIcon(new ImageIcon(getClass().getResource("/icons/done.png")));
                 parentFrame. loadingJButton.setText("Import done");
 //                ProgressDialogX progressDialog = new ProgressDialogX(parentFrame,
