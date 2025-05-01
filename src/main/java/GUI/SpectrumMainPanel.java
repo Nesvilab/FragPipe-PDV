@@ -1513,7 +1513,12 @@ public class SpectrumMainPanel extends JPanel {
             } else {
                 String[] splitLine = line.split("\t");
                 preMzs.add(Float.parseFloat(splitLine[0]));
-                preInts.add(Float.parseFloat(splitLine[1]));
+                if (splitLine[1].contains(" ")){// New MSBooster return different mgf file
+                    preInts.add(Float.parseFloat(splitLine[1].split(" ")[0]));
+                } else{
+                    preInts.add(Float.parseFloat(splitLine[1]));
+                }
+
             }
         }
         return predictionEntryHashMap;
