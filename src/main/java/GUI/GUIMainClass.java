@@ -1332,11 +1332,7 @@ public class GUIMainClass extends JFrame {
         String proteinID = "";
 
         selectPageSpectrumIndex = allSpectrumIndex.get(selectedPSMPageNum - 1);
-        ArrayList<String> allPSMIndex = new ArrayList<>();
-        for (ArrayList<String> onePageSpectrumIndex : allSpectrumIndex) {
-            allPSMIndex.addAll(onePageSpectrumIndex);
-        }
-        for (String spectrumIndex : allPSMIndex) {
+        for (String spectrumIndex : selectPageSpectrumIndex) {
             try {
                 SpectrumMatch oneSpectrumMatch = sqliteConnection.getSpectrumMatch(spectrumIndex);
                 Peptide peptide = oneSpectrumMatch.getBestPeptideAssumption().getPeptide();
@@ -3771,9 +3767,7 @@ public class GUIMainClass extends JFrame {
                         }
                     } else {
                         JOptionPane.showMessageDialog(
-                                GUIMainClass.this, "Invalid spectrum file path in fragpipe-files.fp-manifest.\n" +
-                                        "Spectrum file <"+spectralFilePath+"> is not found.\n" +
-                                        "\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
+                                null, "Invalid spectrum file path in fragpipe-files.fp-manifest.\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
                                 "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
                         if (addNewFile){
                             importNewFileDialog.setRunFinished();
