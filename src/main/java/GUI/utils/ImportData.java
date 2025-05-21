@@ -293,16 +293,16 @@ public class ImportData {
 
     private void goThroughFolder() throws IOException {
 
-        ArrayList<String> logFiles = new ArrayList<>();
+        String workflowFile = "";
 
         for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
-            if (eachFileInMax.getName().endsWith("txt") && eachFileInMax.getName().startsWith("log_")){
-                logFiles.add(eachFileInMax.getName());
+            if (eachFileInMax.getName().equals("fragpipe.workflow")){
+                workflowFile = eachFileInMax.getName();
             }
         }
-        logFiles.sort(Collections.reverseOrder());
-        String latestLogFile = logFiles.get(0);
-        processLog(resultsFolder.getAbsolutePath() + "/" + latestLogFile);
+        if (!workflowFile.equals("")){
+            processWorkflow(resultsFolder.getAbsolutePath() + "/" + workflowFile);
+        }
 
         processManifestFile(latestManiFestFile);
         processMsBooster();
@@ -343,8 +343,8 @@ public class ImportData {
         }
     }
 
-    private void processLog(String latestLogFile) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(latestLogFile));
+    private void processWorkflow(String workflowFile) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(workflowFile));
         String line;
         while ((line = bufferedReader.readLine()) != null) {
             if (line.startsWith("speclibgen.run-speclibgen")){
