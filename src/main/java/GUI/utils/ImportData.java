@@ -565,15 +565,20 @@ public class ImportData {
             File onePSMTable = resultsDict.get(expNum).get(1);
             File onePeptideTable = resultsDict.get(expNum).get(2);
 
-            if (checkFileOpen(oneProteinTable) && checkFileOpen(onePSMTable) && checkFileOpen(onePeptideTable)){
-                addData(expNum, oneProteinTable, onePSMTable, onePeptideTable, connection);
+            boolean runWOProtein = false;
+            if (!checkFileOpen(oneProteinTable)){
+                JOptionPane.showMessageDialog(
+                        null, "The protein.tsv are occupied by other programs or unavailable now.\n" +
+                                "Get protein data from psm.tsv instead.",
+                        "No available protein.tsv file", JOptionPane.WARNING_MESSAGE);
+                runWOProtein = true;
+            }
+
+            if (checkFileOpen(onePSMTable) && checkFileOpen(onePeptideTable)){
+                addData(expNum, oneProteinTable, onePSMTable, onePeptideTable, connection, runWOProtein);
             } else {
                 progressDialog.setRunFinished();
-                if (!checkFileOpen(oneProteinTable)){
-                    JOptionPane.showMessageDialog(
-                            null, "The protein.tsv are occupied by other programs or unavailable now.",
-                            "Error Parsing File", JOptionPane.ERROR_MESSAGE);
-                }
+
                 if (!checkFileOpen(onePSMTable)){
                     JOptionPane.showMessageDialog(
                             null, "The psm.tsv are occupied by other programs or unavailable now.",
@@ -626,6 +631,94 @@ public class ImportData {
         experimentInfo.get(expNum)[3] = modCount;
     }
 
+    private void addProteinDataWOProtein(String expNum, File onePSMTable, Connection connection) throws SQLException, IOException {
+        Statement statement = connection.createStatement();
+        PreparedStatement preparedStatement = null;
+
+        String addValuesQuery = " VALUES(?" + ",?,?)";
+
+        String tableName = "Protein_" + expNum;
+        String matchTableQuery = "CREATE TABLE " + tableName + " (Protein Char" + ", PSMList OBJECT(50), MappedPSMList OBJECT(50)" + ", PRIMARY KEY(Protein))";
+
+        try {
+            statement.execute(matchTableQuery);
+        }catch (SQLException e){
+            progressDialog.setRunFinished();
+            JOptionPane.showMessageDialog(guiMainClass, JOptionEditorPane.getJOptionEditorPane(
+                            "An error occurred while creating table Protein in database."),
+                    "DB Error", JOptionPane.ERROR_MESSAGE);
+            System.err.println("An error occurred while creating table Protein");
+            throw (e);
+        }finally {
+            statement.close();
+        }
+
+        String addDataIntoTable = "INSERT INTO " + tableName + addValuesQuery;
+
+        String line;
+        String[] lineSplit;
+
+        String protein;
+
+        int proteinCount = 0;
+        int proteinCountRound = 0;
+
+        int psmProteinIndex = -1;
+        for (Integer index : psmIndexToName.keySet()){
+            String name = psmIndexToName.get(index);
+            if (name.equalsIgnoreCase("Protein")){
+                psmProteinIndex = index;
+            }
+        }
+
+        Set<String> uniqueProteins = new HashSet<>();
+
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(onePSMTable));
+        bufferedReader.readLine();
+
+        while ((line = bufferedReader.readLine()) != null) {
+            lineSplit = line.split("\t");
+
+            protein = lineSplit[psmProteinIndex]+ ":|" + expNum;
+            uniqueProteins.add(protein);
+
+        }bufferedReader.close();
+
+        for (String oneProtein : uniqueProteins){
+            if (proteinCount == 0){
+                preparedStatement = connection.prepareStatement(addDataIntoTable);
+            }
+
+            preparedStatement.setString(1, oneProtein);
+
+            preparedStatement.addBatch();
+
+            proteinCount ++;
+
+            if(proteinCount == 1000){
+                int[] counts = preparedStatement.executeBatch();
+                connection.commit();
+                preparedStatement.close();
+
+                proteinCount = 0;
+
+                proteinCountRound ++;
+
+            }
+            proteinSeqMap.put(oneProtein.split(":\\|")[0], "AA");
+        }
+
+        if(proteinCount != 0){
+            int[] counts = preparedStatement.executeBatch();
+            connection.commit();
+            preparedStatement.close();
+
+        }
+        Integer[] oneArray = new Integer[4];
+        oneArray[0] = proteinCountRound * 1000 + proteinCount;
+        experimentInfo.put(expNum, oneArray);
+    }
+
     private void addProteinData(String expNum, File oneProteinTable, Connection connection) throws SQLException, IOException {
         Statement statement = connection.createStatement();
         PreparedStatement preparedStatement = null;
@@ -634,7 +727,6 @@ public class ImportData {
         StringBuilder addValuesQuery = new StringBuilder(" VALUES(?");
 
         HashMap<String, Integer> nameToDBIndex = new HashMap<>();
-        ArrayList<String> proteinList = new ArrayList<>();
 
         int countFirst = 0;
         for (Integer index : proteinIndexToName.keySet()){
@@ -685,7 +777,6 @@ public class ImportData {
             lineSplit = line.split("\t");
 
             protein = lineSplit[proteinIndex]+ ":|" + expNum;
-            proteinList.add(protein);
 
             if (proteinCount == 0){
                 preparedStatement = connection.prepareStatement(addDataIntoTable);
@@ -719,7 +810,6 @@ public class ImportData {
 
                 proteinCount = 0;
 
-                proteinList = new ArrayList<>();
                 proteinCountRound ++;
 
             }
@@ -737,12 +827,15 @@ public class ImportData {
         experimentInfo.put(expNum, oneArray);
     }
 
-    private void addData(String expNum, File oneProteinTable, File onePSMTable, File onePeptideTable, Connection connection)
-            throws SQLException, IOException, ClassNotFoundException {
+    private void addData(String expNum, File oneProteinTable, File onePSMTable, File onePeptideTable, Connection connection,
+                         boolean runWOProtein)
+            throws SQLException, IOException {
 
-//        processSpectralFiles(expNum);
-
-        addProteinData(expNum, oneProteinTable, connection);
+        if (runWOProtein){
+            addProteinDataWOProtein(expNum, onePSMTable, connection);
+        } else {
+            addProteinData(expNum, oneProteinTable, connection);
+        }
 
         connection.setAutoCommit(false);
         Statement statement = connection.createStatement();
