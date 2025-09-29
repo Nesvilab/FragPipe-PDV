@@ -1672,81 +1672,6 @@ public class SpectrumMainPanel extends JPanel {
 
     /**
      * Update spectrum
-     * @param mSnSpectrum MSNSpectrum
-     */
-    public void updateSpectrum(MSnSpectrum mSnSpectrum){
-
-        switchPaneMenu.setVisible(false);
-        deNovoMenu.setEnabled(false);
-
-        spectrumJLayeredPane.removeAll();
-
-        try{
-            if (mSnSpectrum != null) {
-
-                Collection<Peak> peaks = mSnSpectrum.getPeakList();
-
-                if (peaks == null || peaks.isEmpty()) {
-                    // peaks list not found
-                } else {
-
-                    boolean newMax = false;
-
-                    if (selectedPsmKey != null) {
-                        try {
-                            if (mSnSpectrum.getPeakList() != null) {
-                                lastMzMaximum = mSnSpectrum.getMaxMz() * 1.05;
-                                newMax = true;
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    double lowerMzZoomRange = 0;
-                    double upperMzZoomRange = lastMzMaximum;
-                    if (spectrumPanel != null && spectrumPanel.getXAxisZoomRangeLowerValue() != 0 && !newMax) {
-                        lowerMzZoomRange = spectrumPanel.getXAxisZoomRangeLowerValue();
-                        upperMzZoomRange = spectrumPanel.getXAxisZoomRangeUpperValue();
-                    }
-
-                    Precursor precursor = mSnSpectrum.getPrecursor();
-
-                    double[] intensitiesAsArray = mSnSpectrum.getIntensityValuesNormalizedAsArray();
-
-                    spectrumPanel = new SpectrumContainer(
-                            mSnSpectrum.getMzValuesAsArray(), intensitiesAsArray,
-                            precursor.getMz(), precursor.getPossibleCharges().get(0).getChargeAsFormattedString(),
-                            "", 40, false, false, false, 2, false, isDenovo);
-                    spectrumPanel.setKnownMassDeltas(getCurrentMassDeltas());
-                    spectrumPanel.setDeltaMassWindow(annotationSettings.getFragmentIonAccuracy());
-                    spectrumPanel.setBorder(null);
-                    spectrumPanel.setDataPointAndLineColor(utilitiesUserPreferences.getSpectrumAnnotatedPeakColor(), 0);
-                    spectrumPanel.setPeakWaterMarkColor(utilitiesUserPreferences.getSpectrumBackgroundPeakColor());
-                    spectrumPanel.setPeakWidth(1);
-                    spectrumPanel.setBackgroundPeakWidth(utilitiesUserPreferences.getSpectrumBackgroundPeakWidth());
-
-                    spectrumPanel.rescale(lowerMzZoomRange, upperMzZoomRange);
-
-                    spectrumPanel.showAnnotatedPeaksOnly(annotationSettings.showAllPeaks());
-                    spectrumPanel.setYAxisZoomExcludesBackgroundPeaks(false);
-
-                    spectrumJLayeredPane.add(spectrumPanel);
-                    spectrumPanel.setBounds(0, 0, spectrumShowPanel.getWidth(), spectrumShowPanel.getHeight() - 35);
-
-                    spectrumShowPanel.revalidate();
-                    spectrumShowPanel.repaint();
-
-                }
-            }
-        } catch (Exception e){
-            JOptionPane.showMessageDialog(null, "An error occurred when Update spectrum.", "update error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Update spectrum
      */
     public void updateSpectrum(){
         spectrumJLayeredPane.removeAll();
@@ -1989,9 +1914,11 @@ public class SpectrumMainPanel extends JPanel {
                     sequenceFragmentationPanel.setOpaque(false);
                     sequenceFragmentationPanel.setBackground(Color.WHITE);
 
-                    spectrumJLayeredPane.add(spectrumPanel);
-
-                    spectrumPanel.setBounds(0, 75, parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    if (spectrumPanel != null && spectrumPanel.getParent() == null) {
+                        spectrumJLayeredPane.setLayer(spectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                        spectrumJLayeredPane.add(spectrumPanel);
+                        spectrumPanel.setBounds(0, 75, parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    }
 
                     spectrumJLayeredPane.setLayer(sequenceFragmentationPanel, JLayeredPane.DRAG_LAYER);
                     spectrumJLayeredPane.add(sequenceFragmentationPanel);
@@ -2102,8 +2029,12 @@ public class SpectrumMainPanel extends JPanel {
                         throw new UnsupportedOperationException("Operation not supported for spectrumIdentificationAssumption of type " + spectrumIdentificationAssumption.getClass() + ".");
                     }
 
-                    mirrorJLayeredPane.add(mirrorSpectrumPanel);
-                    mirrorSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    // Defensive check to prevent IllegalArgumentException
+                    if (mirrorSpectrumPanel != null && mirrorSpectrumPanel.getParent() == null) {
+                        mirrorJLayeredPane.setLayer(mirrorSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                        mirrorJLayeredPane.add(mirrorSpectrumPanel);
+                        mirrorSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    }
 
                     mirrorJLayeredPane.setLayer(sequenceFragmentationPanelMirror, JLayeredPane.DRAG_LAYER);
                     mirrorJLayeredPane.add(sequenceFragmentationPanelMirror);
@@ -2209,8 +2140,11 @@ public class SpectrumMainPanel extends JPanel {
                         throw new UnsupportedOperationException("Operation not supported for spectrumIdentificationAssumption of type " + spectrumIdentificationAssumption.getClass() + ".");
                     }
 
-                    checkPeptideJLayeredPane.add(checkPeptideSpectrumPanel);
-                    checkPeptideSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    if (checkPeptideSpectrumPanel != null && checkPeptideSpectrumPanel.getParent() == null) {
+                        checkPeptideJLayeredPane.setLayer(checkPeptideSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                        checkPeptideJLayeredPane.add(checkPeptideSpectrumPanel);
+                        checkPeptideSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    }
 
                     checkPeptideJLayeredPane.setLayer(sequenceFragmentationPanelCheck, JLayeredPane.DRAG_LAYER);
                     checkPeptideJLayeredPane.add(sequenceFragmentationPanelCheck);
@@ -2336,8 +2270,12 @@ public class SpectrumMainPanel extends JPanel {
                         throw new UnsupportedOperationException("Operation not supported for spectrumIdentificationAssumption of type " + spectrumIdentificationAssumption.getClass() + ".");
                     }
 
-                    predictionJLayeredPane.add(predictedSpectrumPanel);
-                    predictedSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    // Defensive check to prevent IllegalArgumentException
+                    if (predictedSpectrumPanel != null && predictedSpectrumPanel.getParent() == null) {
+                        predictionJLayeredPane.setLayer(predictedSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                        predictionJLayeredPane.add(predictedSpectrumPanel);
+                        predictedSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
+                    }
 
                     predictionJLayeredPane.setLayer(sequenceFragmentationPanelPredicted, JLayeredPane.DRAG_LAYER);
                     predictionJLayeredPane.add(sequenceFragmentationPanelPredicted);

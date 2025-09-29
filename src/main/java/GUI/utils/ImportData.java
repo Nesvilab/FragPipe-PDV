@@ -167,6 +167,7 @@ public class ImportData {
      * Pattern
      */
     private Pattern pattern = Pattern.compile("-?[0-9]+\\.?[0-9]*");
+    public boolean runWOProtein = false;
 
     /**
      *
@@ -551,6 +552,13 @@ public class ImportData {
         guiMainClass.searchButton.setToolTipText("Find items");
         guiMainClass.searchItemTextField.setToolTipText("Find items");
 
+        for (String oneProtein : proteinSeqMap.keySet()){
+            if (proteinSeqMap.get(oneProtein).equals("AA")){
+                runWOProtein = true;
+                break;
+            }
+        }
+
 //        processSpectralFilesBack(resultsDict.keySet());
     }
 
@@ -565,7 +573,7 @@ public class ImportData {
             File onePSMTable = resultsDict.get(expNum).get(1);
             File onePeptideTable = resultsDict.get(expNum).get(2);
 
-            boolean runWOProtein = false;
+            runWOProtein = false;
             if (!checkFileOpen(oneProteinTable)){
                 JOptionPane.showMessageDialog(
                         null, "The protein.tsv are occupied by other programs or unavailable now.\n" +

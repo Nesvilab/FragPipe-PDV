@@ -328,6 +328,7 @@ public class GUIMainClass extends JFrame {
     public Boolean hasPredictionSpectra = false;
     public String predictedFileName;
     public Boolean hasPairedScanNum = false;
+    private boolean runWOProtein = false;
     /**
      *
      */
@@ -2105,7 +2106,7 @@ public class GUIMainClass extends JFrame {
                         }
 
                         buttonCheck();
-                        updateTable();
+                        updatePSMTable();
 
                         spectrumJTable.requestFocus();
                         spectrumJTable.setRowSelectionInterval(0, 0);
@@ -2154,7 +2155,7 @@ public class GUIMainClass extends JFrame {
             pSMAllSelectedJCheckBox.setSelected(false);
         }
 
-        updateTable();
+        updatePSMTable();
 
         spectrumJTable.requestFocus();
         spectrumJTable.setRowSelectionInterval(0, 0);
@@ -2176,7 +2177,7 @@ public class GUIMainClass extends JFrame {
             pSMAllSelectedJCheckBox.setSelected(false);
         }
 
-        updateTable();
+        updatePSMTable();
 
         spectrumJTable.requestFocus();
         spectrumJTable.setRowSelectionInterval(0, 0);
@@ -2248,7 +2249,6 @@ public class GUIMainClass extends JFrame {
             }
 
             updateTable();
-            //`proteinJTableMouseReleased(null);
             this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
         }
     }
@@ -2727,6 +2727,9 @@ public class GUIMainClass extends JFrame {
                     ((DefaultTableModel) spectrumJTable.getModel()).fireTableDataChanged();
                     spectrumJTable.repaint();
 
+                    proteinsJTable.setRowSelectionInterval(0, 0);
+                    proteinJTableMouseReleased(null);
+
                     spectrumJTable.setRowSelectionInterval(0, 0);
                     spectrumJTableMouseReleased(null);
 
@@ -3172,7 +3175,7 @@ public class GUIMainClass extends JFrame {
 
                     buttonCheck();
 
-                    updateTable();
+                    updatePSMTable();
                     //System.gc();
 
                     orderProgressDialog.setRunFinished();
@@ -3267,7 +3270,7 @@ public class GUIMainClass extends JFrame {
 
                     buttonCheck();
 
-                    updateTable();
+                    updatePSMTable();
                     //System.gc();
 
                     orderProgressDialog.setRunFinished();
@@ -3661,6 +3664,7 @@ public class GUIMainClass extends JFrame {
                     hasPredictionSpectra = oneImport.getHasPredictionSpectra();
                     predictedFileName = oneImport.getUseDiaNNPrediction();
                     hasPairedScanNum = oneImport.getHasPairedScanNum();
+                    runWOProtein = oneImport.runWOProtein;
 
                     psmScoreName = oneImport.getPSMScoreName();
                     proteinScoreName = oneImport.getProteinScoreName();
@@ -3954,6 +3958,10 @@ public class GUIMainClass extends JFrame {
         }
         proteinsJTable.revalidate();
         proteinsJTable.repaint();
+
+        if (runWOProtein){
+            coverageJPanel.setVisible(false);
+        }
 
     }
 
