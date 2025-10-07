@@ -1914,14 +1914,10 @@ public class SpectrumMainPanel extends JPanel {
                     sequenceFragmentationPanel.setOpaque(false);
                     sequenceFragmentationPanel.setBackground(Color.WHITE);
 
-                    if (spectrumPanel != null && spectrumPanel.getParent() == null) {
-                        spectrumJLayeredPane.setLayer(spectrumPanel, JLayeredPane.DEFAULT_LAYER);
-                        spectrumJLayeredPane.add(spectrumPanel);
-                        spectrumPanel.setBounds(0, 75, parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
-                    }
+                    spectrumJLayeredPane.add(spectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                    spectrumPanel.setBounds(0, 75, parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
 
-                    spectrumJLayeredPane.setLayer(sequenceFragmentationPanel, JLayeredPane.DRAG_LAYER);
-                    spectrumJLayeredPane.add(sequenceFragmentationPanel);
+                    spectrumJLayeredPane.add(sequenceFragmentationPanel, JLayeredPane.DRAG_LAYER);
                     zoomAction(sequenceFragmentationPanel, modSequence, false);
 
                     spectrumSetAction = new SetAction(this, spectrumJLayeredPane, sequenceFragmentationPanel, null, spectrumPanel, 0, 0, spectrumShowPanel);
@@ -1988,8 +1984,7 @@ public class SpectrumMainPanel extends JPanel {
                         mirrorFragmentPanel.setOpaque(false);
                         mirrorFragmentPanel.setBackground(Color.WHITE);
 
-                        mirrorJLayeredPane.setLayer(mirrorFragmentPanel, JLayeredPane.DRAG_LAYER);
-                        mirrorJLayeredPane.add(mirrorFragmentPanel);
+                        mirrorJLayeredPane.add(mirrorFragmentPanel, JLayeredPane.DRAG_LAYER);
                         zoomAction(mirrorFragmentPanel, modSequence, true);
                     }
 
@@ -2029,15 +2024,10 @@ public class SpectrumMainPanel extends JPanel {
                         throw new UnsupportedOperationException("Operation not supported for spectrumIdentificationAssumption of type " + spectrumIdentificationAssumption.getClass() + ".");
                     }
 
-                    // Defensive check to prevent IllegalArgumentException
-                    if (mirrorSpectrumPanel != null && mirrorSpectrumPanel.getParent() == null) {
-                        mirrorJLayeredPane.setLayer(mirrorSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
-                        mirrorJLayeredPane.add(mirrorSpectrumPanel);
-                        mirrorSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
-                    }
+                    mirrorJLayeredPane.add(mirrorSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                    mirrorSpectrumPanel.setBounds(0, 75, parentFrame.spectrumShowJPanel.getWidth() - 12, parentFrame.spectrumShowJPanel.getHeight() - 110);
 
-                    mirrorJLayeredPane.setLayer(sequenceFragmentationPanelMirror, JLayeredPane.DRAG_LAYER);
-                    mirrorJLayeredPane.add(sequenceFragmentationPanelMirror);
+                    mirrorJLayeredPane.add(sequenceFragmentationPanelMirror, JLayeredPane.DRAG_LAYER);
                     zoomAction(sequenceFragmentationPanelMirror, modSequence, false);
 
                     mirrorSetAction = new SetAction(this, mirrorJLayeredPane, sequenceFragmentationPanelMirror, mirrorFragmentPanel, mirrorSpectrumPanel, 0, 0, spectrumShowPanel);
@@ -2098,8 +2088,7 @@ public class SpectrumMainPanel extends JPanel {
                         checkFragmentPanel.setOpaque(false);
                         checkFragmentPanel.setBackground(Color.WHITE);
 
-                        checkPeptideJLayeredPane.setLayer(checkFragmentPanel, JLayeredPane.DRAG_LAYER);
-                        checkPeptideJLayeredPane.add(checkFragmentPanel);
+                        checkPeptideJLayeredPane.add(checkFragmentPanel, JLayeredPane.DRAG_LAYER);
                         zoomAction(checkFragmentPanel, checkModSequence, true);
                         checkAnnotations = null;
                     }
@@ -2140,14 +2129,10 @@ public class SpectrumMainPanel extends JPanel {
                         throw new UnsupportedOperationException("Operation not supported for spectrumIdentificationAssumption of type " + spectrumIdentificationAssumption.getClass() + ".");
                     }
 
-                    if (checkPeptideSpectrumPanel != null && checkPeptideSpectrumPanel.getParent() == null) {
-                        checkPeptideJLayeredPane.setLayer(checkPeptideSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
-                        checkPeptideJLayeredPane.add(checkPeptideSpectrumPanel);
-                        checkPeptideSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
-                    }
+                    checkPeptideJLayeredPane.add(checkPeptideSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                    checkPeptideSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
 
-                    checkPeptideJLayeredPane.setLayer(sequenceFragmentationPanelCheck, JLayeredPane.DRAG_LAYER);
-                    checkPeptideJLayeredPane.add(sequenceFragmentationPanelCheck);
+                    checkPeptideJLayeredPane.add(sequenceFragmentationPanelCheck, JLayeredPane.DRAG_LAYER);
                     zoomAction(sequenceFragmentationPanelCheck, modSequence, false);
 
                     checkSetAction = new SetAction(this, checkPeptideJLayeredPane, sequenceFragmentationPanelCheck, checkFragmentPanel, checkPeptideSpectrumPanel, 0, 0, spectrumShowPanel);
@@ -2228,8 +2213,8 @@ public class SpectrumMainPanel extends JPanel {
                         predictedFragmentPanel.setOpaque(false);
                         predictedFragmentPanel.setBackground(Color.WHITE);
 
-                        predictionJLayeredPane.setLayer(predictedFragmentPanel, JLayeredPane.DRAG_LAYER);
-                        predictionJLayeredPane.add(predictedFragmentPanel);
+//                        predictionJLayeredPane.setLayer(predictedFragmentPanel, JLayeredPane.DRAG_LAYER);
+                        predictionJLayeredPane.add(predictedFragmentPanel, JLayeredPane.DRAG_LAYER);
 
                         zoomAction(predictedFragmentPanel, modSequence, true);
                     }
@@ -2270,15 +2255,10 @@ public class SpectrumMainPanel extends JPanel {
                         throw new UnsupportedOperationException("Operation not supported for spectrumIdentificationAssumption of type " + spectrumIdentificationAssumption.getClass() + ".");
                     }
 
-                    // Defensive check to prevent IllegalArgumentException
-                    if (predictedSpectrumPanel != null && predictedSpectrumPanel.getParent() == null) {
-                        predictionJLayeredPane.setLayer(predictedSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
-                        predictionJLayeredPane.add(predictedSpectrumPanel);
-                        predictedSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
-                    }
+                    predictionJLayeredPane.add(predictedSpectrumPanel, JLayeredPane.DEFAULT_LAYER);
+                    predictedSpectrumPanel.setBounds(0,75,parentFrame.spectrumShowJPanel.getWidth()-12,parentFrame.spectrumShowJPanel.getHeight()-110);
 
-                    predictionJLayeredPane.setLayer(sequenceFragmentationPanelPredicted, JLayeredPane.DRAG_LAYER);
-                    predictionJLayeredPane.add(sequenceFragmentationPanelPredicted);
+                    predictionJLayeredPane.add(sequenceFragmentationPanelPredicted, JLayeredPane.DRAG_LAYER);
                     zoomAction(sequenceFragmentationPanelPredicted, modSequence, false);
 
                     preSetAction = new SetAction(this, predictionJLayeredPane, sequenceFragmentationPanelPredicted, predictedFragmentPanel, predictedSpectrumPanel, 0, 0, spectrumShowPanel);

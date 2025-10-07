@@ -2352,7 +2352,6 @@ public class GUIMainClass extends JFrame {
                 e.printStackTrace();
             }
 
-
             this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
         }
     }
@@ -2729,9 +2728,6 @@ public class GUIMainClass extends JFrame {
 
                     proteinsJTable.setRowSelectionInterval(0, 0);
                     proteinJTableMouseReleased(null);
-
-                    spectrumJTable.setRowSelectionInterval(0, 0);
-                    spectrumJTableMouseReleased(null);
 
                     progressDialogX.setRunFinished();
 
