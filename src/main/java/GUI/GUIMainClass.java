@@ -98,6 +98,7 @@ public class GUIMainClass extends JFrame {
 //    private String[] searchType = new String[]{"Peptide (String)","Spectrum (String)", "Peptide (File)", "Spectrum (File)", "Protein (String)", "Protein (File)"};
     private String[] searchType = new String[]{"Peptide (String)","Spectrum (String)", "Protein (String)"};
 
+    public String outputLastFolder;
     /**
      * SpectrumTable tooltips list
      */
@@ -165,11 +166,11 @@ public class GUIMainClass extends JFrame {
     /**
      * All selections
      */
-    private ArrayList<String> pSMAllSelections = new ArrayList<>();
+    public ArrayList<String> pSMAllSelections = new ArrayList<>();
     /**
      * All selections
      */
-    private ArrayList<String> proteinAllSelections = new ArrayList<>();
+    public ArrayList<String> proteinAllSelections = new ArrayList<>();
     /**
      * Current proteins selections
      */
@@ -201,7 +202,7 @@ public class GUIMainClass extends JFrame {
     /**
      * Database connection
      */
-    private SQLiteConnection sqliteConnection;
+    public SQLiteConnection sqliteConnection;
     /**
      * Spectrum match
      */
@@ -210,14 +211,6 @@ public class GUIMainClass extends JFrame {
      * Database absolute path
      */
     public String databasePath;
-    /**
-     * Export all spectrum or not
-     */
-    private Boolean exportAll = false;
-    /**
-     * Export selected spectrum or not
-     */
-    private Boolean exportSelection = false;
     /**
      *
      */
@@ -481,11 +474,7 @@ public class GUIMainClass extends JFrame {
         JScrollPane experimentsScrollPane = new JScrollPane();
         JScrollPane proteinsScrollPane = new JScrollPane();
         JScrollPane psmsScrollPane = new JScrollPane();
-        JMenuBar menuBar = new JMenuBar();
         JButton backJButton = new JButton();
-        JButton exportSelectedJButton = new JButton();
-        JMenu exportJMenu = new JMenu();
-        JMenu fileJMenu = new JMenu();
         JPanel mainJPanel = new JPanel();
         JPanel settingJPanel = new JPanel();
         JPanel loadingJPanel = new JPanel();
@@ -493,9 +482,6 @@ public class GUIMainClass extends JFrame {
         JLabel psmAllSelectedJLabel = new JLabel();
         JLabel proteinAllSelectedJLabel = new JLabel();
         JLabel powerPDV = new JLabel("@Powered by PDV");
-
-        JMenuItem exportAllMenuItem = new JMenuItem();
-        JMenuItem exportSelectedJMenuItem = new JMenuItem();
 
         settingColorJButton = new JButton();
         psmUpSortJButton = new JButton();
@@ -668,41 +654,6 @@ public class GUIMainClass extends JFrame {
 
         mainJPanel.setBackground(new java.awt.Color(255, 255, 255));
         //mainJPanel.setPreferredSize(new java.awt.Dimension(1260, 800));
-        menuBar.setBackground(new java.awt.Color(255, 255, 255));
-
-//        fileJMenu.setMnemonic('F');
-//        fileJMenu.setText("File");
-//
-//        idenInforMenuItem.setMnemonic('I');
-//        idenInforMenuItem.setText("Identification Details");
-//        idenInforMenuItem.addActionListener(this::idenInforMenuItemActionPerformed);
-//
-//        fileJMenu.add(idenInforMenuItem);
-//
-//        fileJMenu.add(jSeparator2);
-//
-//        exitJMenuItem.setMnemonic('E');
-//        exitJMenuItem.setText("Exit");
-//        exitJMenuItem.addActionListener(this::exitJMenuItemActionPerformed);
-//
-//        fileJMenu.add(exitJMenuItem);
-
-        menuBar.add(fileJMenu);
-
-        exportJMenu.setMnemonic('x');
-        exportJMenu.setText("Export");
-
-        exportAllMenuItem.setMnemonic('A');
-        exportAllMenuItem.setText("Export All Spectra");
-        exportAllMenuItem.addActionListener(this::exportAllMenuItemActionPerformed);
-        exportJMenu.add(exportAllMenuItem);
-
-//        exportSelectedJMenuItem.setMnemonic('S');
-//        exportSelectedJMenuItem.setText("Export Selected Spectra");
-//        exportSelectedJMenuItem.addActionListener(this::exportSelectedJMenuItemActionPerformed);
-//        exportJMenu.add(exportSelectedJMenuItem);
-
-        menuBar.add(exportJMenu);
 
         searchJPanel.setOpaque(false);
 
@@ -712,12 +663,6 @@ public class GUIMainClass extends JFrame {
         searchItemTextField.setEditable(true);
         searchItemTextField.setHorizontalAlignment(SwingConstants.CENTER);
         searchItemTextField.setToolTipText("Data read unfinished!");
-
-//        openSearchFileJButton.setIcon(new ImageIcon(getClass().getResource("/icons/open.png")));
-//        openSearchFileJButton.setBorder(null);
-//        openSearchFileJButton.setBorderPainted(false);
-//        openSearchFileJButton.setContentAreaFilled(false);
-//        openSearchFileJButton.addActionListener(this::openSearchFileJButtonActionPerformed);
 
 //        searchButton.setEnabled(false);
         searchButton.setBackground(Color.BLACK);
@@ -1133,13 +1078,6 @@ public class GUIMainClass extends JFrame {
         titledBorder.setTitleFont(new Font("Console", Font.PLAIN, 12));
         psmsJPanel.setBorder(titledBorder);
 
-        exportSelectedJButton.setIcon(new ImageIcon(getClass().getResource("/icons/export.png")));
-        exportSelectedJButton.setToolTipText("Export selected PSMs.");
-        exportSelectedJButton.setBorder(null);
-        exportSelectedJButton.setBorderPainted(false);
-        exportSelectedJButton.setContentAreaFilled(false);
-        exportSelectedJButton.addActionListener(this::exportSelectedJButtonActionPerformed);
-
         psmAllSelectedJLabel.setText("Whole page");
         psmAllSelectedJLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         psmAllSelectedJLabel.setToolTipText("Select all spectrum in this page");
@@ -1211,7 +1149,6 @@ public class GUIMainClass extends JFrame {
                         .addGroup(psmsLayeredPanelLayout.createSequentialGroup()
                                 .addComponent(psmsScrollPane, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGroup(psmsLayeredPanelLayout.createSequentialGroup()
-                                .addComponent(exportSelectedJButton)
                                 .addGap(100,1200,2000)
                                 .addComponent(locationJLabelPSM)
                                 .addComponent(psmSortColumnJCombox)
@@ -1234,7 +1171,6 @@ public class GUIMainClass extends JFrame {
                 psmsLayeredPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                         .addGroup(psmsLayeredPanelLayout.createSequentialGroup()
                                 .addGroup(psmsLayeredPanelLayout.createParallelGroup()
-                                        .addComponent(exportSelectedJButton)
                                         .addComponent(locationJLabelPSM)
                                         .addComponent(psmSortColumnJCombox)
                                         .addComponent(psmUpSortJButton)
@@ -1532,34 +1468,6 @@ public class GUIMainClass extends JFrame {
             proteinPeptideObjects = null;
             //System.gc();
         }
-    }
-
-    /**
-     * exportAllMenuItemActionPerformed
-     * @param evt Mouse click event
-     */
-    private void exportAllMenuItemActionPerformed(ActionEvent evt){
-
-        exportAll = true;
-        exportSelection = false;
-
-        Integer size = 0;
-        for (ArrayList<String> each : allSpectrumIndex){
-            size += each.size();
-        }
-        new ExportBatchDialog(this, size);
-    }
-
-    /**
-     * exportSelectedJButtonActionPerformed
-     * @param evt Mouse click event
-     */
-    private void exportSelectedJButtonActionPerformed(ActionEvent evt){
-
-        exportSelection = true;
-        exportAll = false;
-
-        new ExportBatchDialog(this, pSMAllSelections.size());
     }
 
     /**
@@ -4081,7 +3989,8 @@ public class GUIMainClass extends JFrame {
      * @param picWidth Picture width
      * @param unit Length unit
      */
-    public void exportSelectedSpectra(ImageType finalImageType, String outputFolder, Integer picHeight, Integer picWidth, String unit){
+    public void exportSelectedSpectra(ArrayList<String> allSelections, ImageType finalImageType, String outputFolder,
+                                      Integer picHeight, Integer picWidth, String unit){
 
         Object[] allParameters = spectrumMainPanel.getParameters();
         UtilitiesUserPreferences utilitiesUserPreferences = spectrumMainPanel.utilitiesUserPreferences;
@@ -4090,13 +3999,7 @@ public class GUIMainClass extends JFrame {
                 (PeptideSpectrumAnnotator) allParameters[2], (SpecificAnnotationSettings) allParameters[3], this, (HashMap<Double, String>)allParameters[4],
                 (PtmSettings) allParameters[5], finalImageType, outputFolder, ptmFactory, utilitiesUserPreferences);
 
-        if (exportAll){
-            realTimeExportJDialog.readAllSpectrums(allSpectrumIndex);
-        } else if (exportSelection){
-            realTimeExportJDialog.readAllSelections(pSMAllSelections);
-        } else {
-            System.err.println("Exporting wrong");
-        }
+        realTimeExportJDialog.readAllSelections(allSelections);
     }
 
     /**

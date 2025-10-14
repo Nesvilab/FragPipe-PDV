@@ -85,6 +85,9 @@ public class NewDefinedModificationDialog extends JDialog {
         modificationJTable.getColumn("AA").setMaxWidth(30);
         modificationJTable.getColumn("Recover").setMaxWidth(60);
 
+        modificationJTable.getColumn("Global").setMinWidth(0);
+        modificationJTable.getColumn("Global").setMaxWidth(0);
+
         setLocationRelativeTo(spectrumMainPanel);
         setVisible(true);
     }

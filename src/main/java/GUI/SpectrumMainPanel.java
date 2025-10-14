@@ -1,5 +1,6 @@
 package GUI;
 
+import GUI.Export.ExportBatchDialog;
 import GUI.Export.ExportExpectedSizeDialog;
 import GUI.Export.ExportMGFDialog;
 import com.compomics.util.experiment.biology.*;
@@ -360,6 +361,7 @@ public class SpectrumMainPanel extends JPanel {
         JRadioButtonMenuItem deNovoChargeTwoJRadioButtonMenuItem = new JRadioButtonMenuItem();
         JMenuItem annotationSettingsJMenuItem = new JMenuItem();
         JMenuItem exportSpectrumGraphicsJMenuItem = new JMenuItem();
+        JMenuItem exportSelectedSpectrumGraphicsJMenuItem = new JMenuItem();
         JMenuItem exportSpectrumMGFJMenuItem = new JMenuItem();
         JMenuItem checkFileMenuItem = new JMenuItem();
         JMenuItem checkPeptideMenuItem = new JMenuItem();
@@ -654,8 +656,13 @@ public class SpectrumMainPanel extends JPanel {
         exportSpectrumMGFJMenuItem.setFont(menuFont);
         exportSpectrumMGFJMenuItem.addActionListener(this::exportSpectrumMGFJMenuItemActionPerformed);
 
+        exportSelectedSpectrumGraphicsJMenuItem.setText("Batch Spectra");
+        exportSelectedSpectrumGraphicsJMenuItem.setFont(menuFont);
+        exportSelectedSpectrumGraphicsJMenuItem.addActionListener(this::exportSelectedSpectrumGraphicsJMenuItemActionPerformed);
+
         exportGraphicsMenu.add(exportSpectrumGraphicsJMenuItem);
         exportGraphicsMenu.add(exportSpectrumMGFJMenuItem);
+        exportGraphicsMenu.add(exportSelectedSpectrumGraphicsJMenuItem);
 
         annotationMenuBar.add(exportGraphicsMenu);
 
@@ -1109,6 +1116,15 @@ public class SpectrumMainPanel extends JPanel {
         else {
             exportSpectrumAsFigure();
         }
+    }
+
+    /**
+     * exportSelectedSpectrumGraphicsJMenuItemActionPerformed
+     * @param evt Mouse click event
+     */
+    private void exportSelectedSpectrumGraphicsJMenuItemActionPerformed(ActionEvent evt) {
+        new ExportBatchDialog(parentFrame);
+
     }
 
     /**

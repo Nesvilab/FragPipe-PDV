@@ -433,7 +433,9 @@ public class SQLiteConnection {
                     }
                 }
             }
-            progressDialog.increasePrimaryProgressCounter();
+            if (progressDialog!=null) {
+                progressDialog.increasePrimaryProgressCounter();
+            }
         }
 
         output[0] = selectedIndexList;

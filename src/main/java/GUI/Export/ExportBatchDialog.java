@@ -11,6 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.sql.SQLException;
+import java.util.ArrayList;
 
 /**
  * Export batch pic dialog
@@ -21,22 +23,16 @@ public class ExportBatchDialog extends JDialog {
     private JTextField pathJText;
     private JButton exportJButton;
     private JComboBox typeJComboBox;
+    private JComboBox selectedTypeJComboBox;
     private JTextField picHeightJText;
     private JTextField picWidthJText;
     private JComboBox unitJCombox;
+    private JLabel inforJLabel = new JLabel();
 
     /**
      * Picture type
      */
     private String[] picType = new String[]{"PNG", "TIFF", "PDF", "SVG"};
-    /**
-     * Selection size
-     */
-    private Integer selectionSize;
-    /**
-     * Last selected folder
-     */
-    private String lastFolder;
     /**
      * Output folder path
      */
@@ -45,17 +41,16 @@ public class ExportBatchDialog extends JDialog {
      * Parent class
      */
     private GUIMainClass guiMainClass;
+    private ArrayList<String> allSelections;
 
     /**
      * Constructor
      * @param guiMainClass Parent class
-     * @param selectionSize All selections
      */
-    public ExportBatchDialog(GUIMainClass guiMainClass, Integer selectionSize){
+    public ExportBatchDialog(GUIMainClass guiMainClass){
         super(guiMainClass, true);
 
         this.guiMainClass = guiMainClass;
-        this.selectionSize = selectionSize;
 
         setUpGui();
 
@@ -74,6 +69,12 @@ public class ExportBatchDialog extends JDialog {
         picHeightJText.setText(String.valueOf(500));
         picWidthJText.setText(String.valueOf(900));
 
+        inforJLabel.setText("There are "+guiMainClass.pSMAllSelections.size() +" spectral you selected to export");
+        allSelections = guiMainClass.pSMAllSelections;
+
+        selectedTypeJComboBox.setEnabled(true);
+        selectedTypeJComboBox.setRenderer(new AlignedListCellRenderer(0));
+
         typeJComboBox.setEnabled(true);
         typeJComboBox.setRenderer(new AlignedListCellRenderer(0));
         pathJText.setText("No Selection");
@@ -87,12 +88,13 @@ public class ExportBatchDialog extends JDialog {
         JPanel detailJPanel = new JPanel();
         JButton pathBrowseJButton = new JButton();
         JLabel typeJLabel = new JLabel();
-        JLabel inforJLabel = new JLabel();
+        JLabel selectedTypeJLabel = new JLabel("Selected Type");
         JLabel picHeightJLabel = new JLabel("Height");
         JLabel picWidthJlabel = new JLabel("Width");
         JLabel blankJLabel = new JLabel(" ");
         exportJButton = new JButton();
         typeJComboBox = new JComboBox();
+        selectedTypeJComboBox =  new JComboBox();
         pathJLabel = new JLabel();
         pathJText = new JTextField();
         picHeightJText = new JTextField();
@@ -134,11 +136,11 @@ public class ExportBatchDialog extends JDialog {
         typeJLabel.setText("Type");
         typeJLabel.setFont(new Font("Console", Font.PLAIN, 12));
 
+        selectedTypeJComboBox.setModel(new DefaultComboBoxModel(new String[]{"PSMs", "Proteins"}));
+        selectedTypeJComboBox.addItemListener(this::selectedTypeJComboBoxMouseClicked);
+
         typeJComboBox.setModel(new DefaultComboBoxModel(this.picType));
         typeJComboBox.addItemListener(this::typeJComboBoxdMouseClicked);
-
-        inforJLabel.setText("There are "+selectionSize +" spectral you selected to export");
-        inforJLabel.setFont(new Font("Arial", Font.ITALIC,12));
 
         picHeightJText.setHorizontalAlignment(SwingConstants.CENTER);
         picWidthJText.setHorizontalAlignment(SwingConstants.CENTER);
@@ -163,6 +165,7 @@ public class ExportBatchDialog extends JDialog {
                         .addGroup(detailJPanelLayout.createSequentialGroup()
                                 .addGroup(detailJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                                         .addComponent(pathJLabel, GroupLayout.DEFAULT_SIZE, 70, Short.MAX_VALUE)
+                                        .addComponent(selectedTypeJLabel, GroupLayout.DEFAULT_SIZE, 70, Short.MAX_VALUE)
                                         .addComponent(typeJLabel, GroupLayout.DEFAULT_SIZE, 70, Short.MAX_VALUE)
                                         .addComponent(blankJLabel, GroupLayout.DEFAULT_SIZE, 70, Short.MAX_VALUE))
                                 .addGroup(detailJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -170,6 +173,7 @@ public class ExportBatchDialog extends JDialog {
                                                 .addComponent(pathJText, GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
                                                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                                                 .addComponent(pathBrowseJButton))
+                                        .addComponent(selectedTypeJComboBox, GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
                                         .addComponent(typeJComboBox, GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
                                         .addGroup(detailJPanelLayout.createSequentialGroup()
                                                 .addComponent(picHeightJLabel, GroupLayout.DEFAULT_SIZE, 70, Short.MAX_VALUE)
@@ -188,6 +192,8 @@ public class ExportBatchDialog extends JDialog {
                                 .addGroup(detailJPanelLayout.createSequentialGroup()
                                         .addComponent(pathJLabel, GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
                                         .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(selectedTypeJLabel, GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
+                                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                                         .addComponent(typeJLabel, GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
                                         .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                                         .addComponent(blankJLabel, GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE))
@@ -196,6 +202,8 @@ public class ExportBatchDialog extends JDialog {
                                 .addGroup(detailJPanelLayout.createParallelGroup(GroupLayout.Alignment.CENTER)
                                         .addComponent(pathJText)
                                         .addComponent(pathBrowseJButton))
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(selectedTypeJComboBox)
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(typeJComboBox)
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
@@ -212,7 +220,10 @@ public class ExportBatchDialog extends JDialog {
 
         mainJPanelLayout.setHorizontalGroup(
                 mainJPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(detailJPanel)
+                        .addGroup(mainJPanelLayout.createSequentialGroup()
+                                .addGap(20)
+                                .addComponent(detailJPanel)
+                                .addGap(20))
                         .addGroup(mainJPanelLayout.createSequentialGroup()
                                 .addGap(20)
                                 .addComponent(inforJLabel, GroupLayout.DEFAULT_SIZE, 260, 400)
@@ -277,7 +288,7 @@ public class ExportBatchDialog extends JDialog {
      * @param evt mouse click event
      */
     private void pathBrowseJButtonActionPerformed(ActionEvent evt) {
-        JFileChooser fileChooser = new JFileChooser(lastFolder);
+        JFileChooser fileChooser = new JFileChooser(guiMainClass.outputLastFolder);
         fileChooser.setDialogTitle("Select Output Directory");
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fileChooser.setMultiSelectionEnabled(false);
@@ -301,6 +312,7 @@ public class ExportBatchDialog extends JDialog {
             } else {
                 pathJText.setText(outputFolder + " selected");
             }
+            guiMainClass.outputLastFolder = outputFolder;
 
             validateInput();
         }
@@ -318,6 +330,32 @@ public class ExportBatchDialog extends JDialog {
         } else {
             unitJCombox.setModel(new DefaultComboBoxModel(new String[]{"px", "mm", "cm", "in"}));
         }
+    }
+
+    /**
+     * Update unit according to the pic type
+     * @param evt Mouse click event
+     */
+    private void selectedTypeJComboBoxMouseClicked(ItemEvent evt){
+        int selectIndex = selectedTypeJComboBox.getSelectedIndex();
+
+        if (selectIndex == 0){
+            inforJLabel.setText("There are "+guiMainClass.pSMAllSelections.size() +" spectral you selected to export");
+            inforJLabel.setFont(new Font("Arial", Font.ITALIC,12));
+            allSelections = guiMainClass.pSMAllSelections;
+        } else {
+            ArrayList<String>[] oneFetch = new ArrayList[2];
+            try {
+                oneFetch = guiMainClass.sqliteConnection.getSpectrumList(guiMainClass.proteinAllSelections, null);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            allSelections = oneFetch[0];
+            inforJLabel.setText("There are "+oneFetch[0].size() +" spectral from " + guiMainClass.proteinAllSelections.size() +
+                    " proteins you selected to export");
+            inforJLabel.setFont(new Font("Arial", Font.ITALIC,12));
+        }
+
     }
 
     /**
@@ -355,7 +393,7 @@ public class ExportBatchDialog extends JDialog {
         }
 
         if (guiMainClass != null){
-            guiMainClass.exportSelectedSpectra(finalImageType, outputFolder, picHeight, picWidth, String.valueOf(unitJCombox.getSelectedItem()));
+            guiMainClass.exportSelectedSpectra(allSelections, finalImageType, outputFolder, picHeight, picWidth, String.valueOf(unitJCombox.getSelectedItem()));
         }
     }
 }
