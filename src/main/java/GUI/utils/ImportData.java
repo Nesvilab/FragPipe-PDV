@@ -45,30 +45,7 @@ public class ImportData {
      * Threads number
      */
     private int threadsNumber = 1;
-    /**
-     * Latest manifest file
-     */
-    private File latestManiFestFile;
-    /**
-     * DIA-Umpire indicator
-     */
-    private Boolean isDIAUmpire = false;
-    /**
-     * Experiment information
-     */
-    private ArrayList<String> expInformation = new ArrayList<>();
-    /**
-     * DDA file dict
-     */
-    private HashMap<String, ArrayList<String>> ddaSpectrumFiles = new HashMap<>();
-    /**
-     * DIA file dict
-     */
-    private HashMap<String, ArrayList<String>> diaSpectrumFiles = new HashMap<>();
-    /**
-     * Spectrum file types
-     */
-    private HashMap<String, String> spectrumFileTypes = new HashMap<>();
+
     /**
      * Parent class
      */
@@ -78,33 +55,11 @@ public class ImportData {
      */
     private SQLiteConnection sqliteConnection;
     /**
-     * Spectrum file lists
-     */
-    private HashMap<String, String> spectrumFileMap = new HashMap<>();
-    /**
      *
      */
     private ArrayList<String> spectrumFileOrder = new ArrayList<>();
-    /**
-     * Results dict
-     */
-    private HashMap<String, ArrayList<File>> resultsDict = new HashMap<>();
-    /**
-     * Index to name
-     */
-    private HashMap<Integer, String> proteinIndexToName = new HashMap<>();
-    /**
-     * Index to name
-     */
-    private HashMap<String, HashMap<Integer, String>> proteinIndexToNameDic = new HashMap<>();
-    /**
-     * Index to name
-     */
-    private HashMap<Integer, String> psmIndexToName = new HashMap<>();
-    /**
-     * Index to name
-     */
-    private HashMap<String, HashMap<Integer, String>> psmIndexToNameDic = new HashMap<>();
+
+
     /**
      *
      */
@@ -113,40 +68,6 @@ public class ImportData {
      *
      */
     private HashMap<String, PredictionEntry> predictionEntryHashMap = new HashMap<>();
-    /**
-     *
-     */
-    private Boolean hasPredictionSpectra = false;
-    /**
-     *
-     */
-    private Boolean runSpecLib = false;
-    private String predictedFileName;
-    private Boolean hasPairedScanNum = false;
-    /**
-     *
-     */
-    private ArrayList<String> expNumList = new ArrayList<>();
-    /**
-     * PSM result file column index
-     */
-    private int proteinIndex = -1;
-    /**
-     * Protein result file column index
-     */
-    private int spectrumIndex = -1, peptideSequenceIndex = -1, chargeIndex = -1, caculatedMZIndex = -1, observedMZIndex = -1, assignenModIndex = -1;
-    /**
-     * Spectrum factory
-     */
-    private SpectrumFactory spectrumFactory = SpectrumFactory.getInstance();;
-    /**
-     *
-     */
-    private ArrayList<String> mgfFiles = new ArrayList<>();
-    /**
-     * Instance to save mzML files
-     */
-    private HashMap<String, ScanCollectionDefault> scansFileHashMap = new HashMap<>(999999);
     /**
      * Progress dialog
      */
@@ -169,23 +90,24 @@ public class ImportData {
     private Pattern pattern = Pattern.compile("-?[0-9]+\\.?[0-9]*");
     public boolean runWOProtein = false;
 
+    private ResultProcessor resultProcessor;
+
     /**
      *
      * @param guiMainClass
      * @param resultsFolder
      */
-    public ImportData(GUIMainClass guiMainClass, File resultsFolder, int threadsNumber, ProgressDialogX progressDialog) throws SQLException, ClassNotFoundException {
+    public ImportData(GUIMainClass guiMainClass, File resultsFolder, int threadsNumber, ProgressDialogX progressDialog) {
         this.guiMainClass = guiMainClass;
         this.resultsFolder = resultsFolder;
         this.threadsNumber = threadsNumber;
         this.progressDialog = progressDialog;
 
+        this.resultProcessor = new ResultProcessor(resultsFolder,  progressDialog);
+
         try {
 
-            String manifestFile = versionCheck();
-
-            if (manifestFile != null){
-                goThroughFolder();
+            if (resultProcessor.manifestFile != null){
 
                 if (new File(resultsFolder.getAbsolutePath() + "/FP-PDV.db").exists()){
                     try {
@@ -199,10 +121,9 @@ public class ImportData {
 
                 } else {
                     getProteinSeq();
-                    getTableIndexes();
                     initialDB();
-                    sqliteConnection.setPSMScoreNum(psmIndexToName.size());
-                    sqliteConnection.setProteinScoreNum(proteinIndexToName.size());
+                    sqliteConnection.setPSMScoreNum(resultProcessor.psmIndexToName.size());
+                    sqliteConnection.setProteinScoreNum(resultProcessor.proteinIndexToName.size());
                     processTable();
                     //cleanData();
                 }
@@ -225,31 +146,6 @@ public class ImportData {
 
     }
 
-    private String versionCheck() {
-        ArrayList<String> allManiFile = new ArrayList<>();
-
-        for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())) {
-
-//            if (eachFileInMax.getName().endsWith("manifest")) {
-//                allManiFile.add(eachFileInMax.getAbsolutePath());
-//            } /// For old version test only
-
-            if (eachFileInMax.getName().equals("fragpipe-files.fp-manifest")) {
-                allManiFile.add(eachFileInMax.getAbsolutePath());
-            }
-            if (eachFileInMax.getName().equals("umpire-se.params")){
-                isDIAUmpire = true;
-            }
-        }
-
-        if (allManiFile.size() == 0){
-            return null;
-        } else {
-            allManiFile.sort(Collections.reverseOrder());
-            latestManiFestFile = new File(allManiFile.get(0));
-            return allManiFile.get(0);
-        }
-    }
 
     private Boolean checkFileOpen(File eachFile){
         if (Files.exists(eachFile.toPath()) && Files.isRegularFile(eachFile.toPath()) && Files.isReadable(eachFile.toPath())){
@@ -257,223 +153,6 @@ public class ImportData {
         } else {
             return false;
         }
-    }
-
-    private void processMsBooster() throws IOException {
-        if (new File(resultsFolder.getAbsolutePath() + "/msbooster_params.txt").exists()){
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(resultsFolder.getAbsolutePath() + "/msbooster_params.txt"));
-            String line;
-            String[] lineSplit;
-
-            while ((line = bufferedReader.readLine()) != null) {
-                lineSplit = line.split("=");
-                if (lineSplit[0].contains("useSpectra")){
-                    if (lineSplit[1].contains("true")){
-                        hasPredictionSpectra = true;
-                    }
-                }
-                if (lineSplit[0].contains("spectraPredFile")){
-                    String fileSeparator = "/";
-                    if (lineSplit[1].contains("\\")){
-                        fileSeparator = "\\\\";
-                    }
-                    predictedFileName = lineSplit[1].split(fileSeparator)[lineSplit[1].split(fileSeparator).length-1];
-                }
-//                if (lineSplit[0].contains("spectraModel")){
-//                    if (!lineSplit[1].contains("DIA-NN")){
-//                        useDiaNNPrediction = false;
-//                    }
-//                }
-            }
-
-
-        } else {
-            hasPredictionSpectra = false;
-        }
-    }
-
-    private void goThroughFolder() throws IOException {
-
-        String workflowFile = "";
-
-        for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
-            if (eachFileInMax.getName().equals("fragpipe.workflow")){
-                workflowFile = eachFileInMax.getName();
-            }
-        }
-        if (!workflowFile.equals("")){
-            processWorkflow(resultsFolder.getAbsolutePath() + "/" + workflowFile);
-        }
-
-        processManifestFile(latestManiFestFile);
-        processMsBooster();
-
-        if (expInformation.contains("inner_defined_empty_exp")){
-            expNumList.add("1");
-
-            resultsDict.put("1", new ArrayList<File>() {{
-                add(new File(resultsFolder.getAbsolutePath() + "/protein.tsv"));
-                add(new File(resultsFolder.getAbsolutePath() + "/psm.tsv"));
-                add(new File(resultsFolder.getAbsolutePath() + "/peptide.tsv"));
-                add(new File(resultsFolder.getAbsolutePath() + "/protein.fas"));
-            }});
-
-//            if (new File(resultsFolder.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
-//                hasPredictionSpectra = true;
-//            }
-
-        } else {
-            for(File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
-                if(expInformation.contains(eachFileInMax.getName())) {
-
-                    String expName = eachFileInMax.getName().replace("-", "_Dash_");
-
-                    expNumList.add(expName);
-                    resultsDict.put(expName, new ArrayList<File>() {{
-                        add(new File(eachFileInMax.getAbsolutePath() + "/protein.tsv"));
-                        add(new File(eachFileInMax.getAbsolutePath() + "/psm.tsv"));
-                        add(new File(eachFileInMax.getAbsolutePath() + "/peptide.tsv"));
-                        add(new File(eachFileInMax.getAbsolutePath() + "/protein.fas"));
-                    }});
-//                    if (new File(eachFileInMax.getAbsolutePath() + "/spectraRT.predicted.bin").exists()){
-//                        hasPredictionSpectra = true;
-//                    }
-
-                }
-            }
-        }
-    }
-
-    private void processWorkflow(String workflowFile) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(workflowFile));
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            if (line.startsWith("speclibgen.run-speclibgen")){
-                if (Objects.equals(line.split("run-speclibgen=")[1], "false")){
-                    runSpecLib = false;
-                } else {
-                    runSpecLib = true;
-                }
-            }
-        }
-    }
-
-    private void processManifestFile(File mainFestFile) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(mainFestFile));
-
-        String line;
-        String expName;
-        String[] lineSplit;
-        String pattern = Pattern.quote(System.getProperty("file.separator"));
-        while ((line = bufferedReader.readLine()) != null) {
-            lineSplit = line.split("\t");
-
-            if (lineSplit[0].endsWith(".mgf")){
-                String[] fileArr = lineSplit[0].split(pattern);
-                spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mgf")[0], lineSplit[0]);
-            } else if (lineSplit[0].endsWith(".mzML")){
-                String[] fileArr = lineSplit[0].split(pattern);
-                if (lineSplit[0].startsWith("./") || lineSplit[0].startsWith("../")){
-                    lineSplit[0] = resultsFolder.getAbsolutePath() + System.getProperty("file.separator") + lineSplit[0].replace("/", System.getProperty("file.separator"));
-                } else if (lineSplit[0].startsWith(".\\")|| lineSplit[0].startsWith("..\\")){
-                    lineSplit[0] = resultsFolder.getAbsolutePath() + System.getProperty("file.separator") + lineSplit[0].replace("\\", System.getProperty("file.separator"));
-                }
-
-                spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzML")[0], lineSplit[0]);
-            } else if (lineSplit[0].endsWith(".mzml")){
-                String[] fileArr = lineSplit[0].split(pattern);
-                if (lineSplit[0].startsWith("./")){
-                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace("./", System.getProperty("file.separator"));
-                } else if (lineSplit[0].startsWith(".\\")){
-                    lineSplit[0] = resultsFolder.getAbsolutePath() + lineSplit[0].replace(".\\", System.getProperty("file.separator"));
-                }
-
-                spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzml")[0], lineSplit[0]);
-            } else if (lineSplit[0].endsWith(".raw")){
-                String[] fileArr = lineSplit[0].split(pattern);
-                if (new File(lineSplit[0].replace(".raw", "_uncalibrated.mzML")).exists()){
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_uncalibrated.mzML"));
-                } else {
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_calibrated.mzML"));
-                }
-
-            } else if (lineSplit[0].endsWith(".d") && (Objects.equals(lineSplit[3], "DDA")|| Objects.equals(lineSplit[3], "DDA+"))){
-                String[] fileArr = lineSplit[0].split(pattern);
-                if (new File(lineSplit[0].replace(".d", "_uncalibrated.mzML")).exists()){
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_uncalibrated.mzML"));
-                } else {
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0], lineSplit[0].replace(".d", "_calibrated.mzML"));
-                }
-            } else if (lineSplit[0].endsWith(".d") && Objects.equals(lineSplit[3], "DIA")){
-                String[] fileArr = lineSplit[0].split(pattern);
-                if (new File(lineSplit[0].replace(".d", "_diatracer_calibrated.mzML")).exists()){
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_diatracer", lineSplit[0].replace(".d", "_diatracer_calibrated.mzML"));
-                } else {
-                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.d")[0]+"_diatracer", lineSplit[0].replace(".d", "_diatracer.mzML"));
-                }
-            }
-
-            if (Objects.equals(lineSplit[1], "") || runSpecLib){
-                expName = "inner_defined_empty_exp";
-            } else {
-                if (Objects.equals(lineSplit[2], "")) {
-                    expName = lineSplit[1];
-                } else {
-                    expName = lineSplit[1] + "_" + lineSplit[2];
-                }
-            }
-            if (expInformation.contains(expName)){
-                if (Objects.equals(expName, "inner_defined_empty_exp")){
-                    expName = "1";
-                }
-                if (Objects.equals(lineSplit[3], "DDA")) {
-                    ddaSpectrumFiles.get(expName).add(lineSplit[0]);
-
-                } else {
-                    if (!lineSplit[0].endsWith(".d")){
-                        if (!isDIAUmpire){
-                            ddaSpectrumFiles.get(expName).add(lineSplit[0]);
-                        } else {
-                            String mzmlName = lineSplit[0].split(pattern)[lineSplit[0].split(pattern).length - 1].split("\\.")[0];
-                            for (File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
-                                if (eachFileInMax.getName().startsWith(mzmlName + "_") && eachFileInMax.getName().endsWith("mzML")){
-                                    diaSpectrumFiles.get(expName).add(eachFileInMax.getAbsolutePath());
-                                    String[] fileArr = eachFileInMax.getAbsolutePath().split(pattern);
-                                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzML")[0], eachFileInMax.getAbsolutePath());
-                                }
-                            }
-                        }
-                    }
-                }
-
-            } else {
-                expInformation.add(expName);
-                if (Objects.equals(expName, "inner_defined_empty_exp")){
-                    expName = "1";
-                }
-                ddaSpectrumFiles.put(expName, new ArrayList<>());
-                diaSpectrumFiles.put(expName, new ArrayList<>());
-                if (Objects.equals(lineSplit[3], "DDA")) {
-                    ddaSpectrumFiles.get(expName).add(lineSplit[0]);
-                } else {
-                    if (!lineSplit[0].endsWith(".d")){
-                        if (!isDIAUmpire){
-                            ddaSpectrumFiles.get(expName).add(lineSplit[0]);
-                        } else {
-                            String mzmlName = lineSplit[0].split(pattern)[lineSplit[0].split(pattern).length - 1].split("\\.")[0];
-                            for (File eachFileInMax : Objects.requireNonNull(resultsFolder.listFiles())){
-                                if (eachFileInMax.getName().startsWith(mzmlName + "_") && eachFileInMax.getName().endsWith("mzML")){
-                                    diaSpectrumFiles.get(expName).add(eachFileInMax.getAbsolutePath());
-                                    String[] fileArr = eachFileInMax.getAbsolutePath().split(pattern);
-                                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.mzML")[0], eachFileInMax.getAbsolutePath());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        bufferedReader.close();
     }
 
     private void initialDB() throws SQLException, ClassNotFoundException {
@@ -505,9 +184,9 @@ public class ImportData {
         String query1 = "SELECT * FROM ExperimentInfo";
         rs1 = statement.executeQuery(query1);
         while (rs1.next()){
-            expNumList = (ArrayList<String>) convertBackByte(rs1.getBytes(2));
-            psmIndexToName = (HashMap<Integer, String>) convertBackByte(rs1.getBytes(3));
-            proteinIndexToName = (HashMap<Integer, String>) convertBackByte(rs1.getBytes(4));
+            resultProcessor.expNumList = (ArrayList<String>) convertBackByte(rs1.getBytes(2));
+            resultProcessor.psmIndexToName = (HashMap<Integer, String>) convertBackByte(rs1.getBytes(3));
+            resultProcessor.proteinIndexToName = (HashMap<Integer, String>) convertBackByte(rs1.getBytes(4));
             proteinSeqMap = (HashMap<String, String>) convertBackByte(rs1.getBytes(5));
             experimentInfo = (HashMap<String, Integer[]>) convertBackByte(rs1.getBytes(6));
             allModifications = (ArrayList<String>) convertBackByte(rs1.getBytes(7));
@@ -542,12 +221,12 @@ public class ImportData {
             }
         }
 
-        if (psmIndexToName.containsValue("PairedScanNum")){
-            hasPairedScanNum = true;
+        if (resultProcessor.psmIndexToName.containsValue("PairedScanNum")){
+            resultProcessor.hasPairedScanNum = true;
         }
 
-        sqliteConnection.setPSMScoreNum(psmIndexToName.size());
-        sqliteConnection.setProteinScoreNum(proteinIndexToName.size());
+        sqliteConnection.setPSMScoreNum(resultProcessor.psmIndexToName.size());
+        sqliteConnection.setProteinScoreNum(resultProcessor.proteinIndexToName.size());
 
         guiMainClass.searchButton.setToolTipText("Find items");
         guiMainClass.searchItemTextField.setToolTipText("Find items");
@@ -568,10 +247,10 @@ public class ImportData {
 
         connection.setAutoCommit(false);
 
-        for (String expNum : resultsDict.keySet()){
-            File oneProteinTable = resultsDict.get(expNum).get(0);
-            File onePSMTable = resultsDict.get(expNum).get(1);
-            File onePeptideTable = resultsDict.get(expNum).get(2);
+        for (String expNum : resultProcessor.resultsDict.keySet()){
+            File oneProteinTable = resultProcessor.resultsDict.get(expNum).get(0);
+            File onePSMTable = resultProcessor.resultsDict.get(expNum).get(1);
+            File onePeptideTable = resultProcessor.resultsDict.get(expNum).get(2);
 
             runWOProtein = false;
             if (!checkFileOpen(oneProteinTable)){
@@ -672,8 +351,8 @@ public class ImportData {
         int proteinCountRound = 0;
 
         int psmProteinIndex = -1;
-        for (Integer index : psmIndexToName.keySet()){
-            String name = psmIndexToName.get(index);
+        for (Integer index : resultProcessor.psmIndexToName.keySet()){
+            String name = resultProcessor.psmIndexToName.get(index);
             if (name.equalsIgnoreCase("Protein")){
                 psmProteinIndex = index;
             }
@@ -737,17 +416,17 @@ public class ImportData {
         HashMap<String, Integer> nameToDBIndex = new HashMap<>();
 
         int countFirst = 0;
-        for (Integer index : proteinIndexToName.keySet()){
+        for (Integer index : resultProcessor.proteinIndexToName.keySet()){
             countFirst ++;
 
-            String oneName = proteinIndexToName.get(index);
+            String oneName = resultProcessor.proteinIndexToName.get(index);
             if (Character.isDigit(oneName.charAt(0))){
                 oneName = "Str_" +oneName;
             }
 
             addQuery.append(", ").append(oneName).append(" OBJECT(50)");
             addValuesQuery.append(",?");
-            nameToDBIndex.put(proteinIndexToName.get(index), 1+countFirst);
+            nameToDBIndex.put(resultProcessor.proteinIndexToName.get(index), 1+countFirst);
         }
         addQuery.append(", PSMList OBJECT(50), MappedPSMList OBJECT(50)");
         addValuesQuery.append(",?,?)");
@@ -784,7 +463,7 @@ public class ImportData {
         while ((line = bufferedReader.readLine()) != null) {
             lineSplit = line.split("\t");
 
-            protein = lineSplit[proteinIndex]+ ":|" + expNum;
+            protein = lineSplit[resultProcessor.proteinIndex]+ ":|" + expNum;
 
             if (proteinCount == 0){
                 preparedStatement = connection.prepareStatement(addDataIntoTable);
@@ -792,8 +471,8 @@ public class ImportData {
 
             preparedStatement.setString(1, protein);
 
-            for (Integer index : proteinIndexToName.keySet()){
-                String name = proteinIndexToName.get(index);
+            for (Integer index : resultProcessor.proteinIndexToName.keySet()){
+                String name = resultProcessor.proteinIndexToName.get(index);
                 String value;
                 if (index >= lineSplit.length){
                     value = "";
@@ -855,16 +534,16 @@ public class ImportData {
         HashMap<String, Integer> nameToDBIndex = new HashMap<>();
 
         int countFirst = 0;
-        for (Integer index : psmIndexToName.keySet()){
+        for (Integer index : resultProcessor.psmIndexToName.keySet()){
             countFirst ++;
-            String oneName = psmIndexToName.get(index);
+            String oneName = resultProcessor.psmIndexToName.get(index);
             if (Character.isDigit(oneName.charAt(0))){
                 oneName = "Str_" +oneName;
             }
 
             addQuery.append(", ").append(oneName).append(" OBJECT(50)");
             addValuesQuery.append(",?");
-            nameToDBIndex.put(psmIndexToName.get(index), 6+countFirst);
+            nameToDBIndex.put(resultProcessor.psmIndexToName.get(index), 6+countFirst);
         }
         addValuesQuery.append(")");
 
@@ -914,7 +593,7 @@ public class ImportData {
             lineSplit = line.split("\t");
 
             spectrumOldTitle = "";
-            spectrumNewTitle = lineSplit[spectrumIndex];
+            spectrumNewTitle = lineSplit[resultProcessor.spectrumIndex];
             for (String eachItem : spectrumNewTitle.split("\\.")){
                 if (isNumeric(eachItem)){
                     spectrumOldTitle = spectrumOldTitle + Integer.valueOf(eachItem) + ".";
@@ -925,10 +604,10 @@ public class ImportData {
             spectrumOldTitle = spectrumOldTitle.substring(0, spectrumOldTitle.length() - 1);
             spectrumFile = spectrumNewTitle.split("\\.")[0];
 
-            chargeValue = Integer.parseInt(lineSplit[chargeIndex]);
-            peptideSequence = lineSplit[peptideSequenceIndex];
-            calculatedMZ = Double.valueOf(lineSplit[caculatedMZIndex]);
-            assignedMod = lineSplit[assignenModIndex];
+            chargeValue = Integer.parseInt(lineSplit[resultProcessor.chargeIndex]);
+            peptideSequence = lineSplit[resultProcessor.peptideSequenceIndex];
+            calculatedMZ = Double.valueOf(lineSplit[resultProcessor.caculatedMZIndex]);
+            assignedMod = lineSplit[resultProcessor.assignenModIndex];
 
             if (count == 0){
                 preparedStatement = connection.prepareStatement(addDataIntoTable);
@@ -994,8 +673,8 @@ public class ImportData {
 //            preparedStatement.setBytes(5, byteArray1);
 //            preparedStatement.setBytes(6, byteArray2);
 
-            for (Integer index : psmIndexToName.keySet()){
-                String name = psmIndexToName.get(index);
+            for (Integer index : resultProcessor.psmIndexToName.keySet()){
+                String name = resultProcessor.psmIndexToName.get(index);
                 String value;
                 if (index >= lineSplit.length){
                     value = "";
@@ -1141,9 +820,9 @@ public class ImportData {
 
         preparedStatement.setString(1, "1");
 
-        byte[] bos1 = convertByte(expNumList);
-        byte[] bos2 = convertByte(psmIndexToName);
-        byte[] bos3 = convertByte(proteinIndexToName);
+        byte[] bos1 = convertByte(resultProcessor.expNumList);
+        byte[] bos2 = convertByte(resultProcessor.psmIndexToName);
+        byte[] bos3 = convertByte(resultProcessor.proteinIndexToName);
         byte[] bos4 = convertByte(proteinSeqMap);
         byte[] bos5 = convertByte(experimentInfo);
         byte[] bos6 = convertByte(allModifications);
@@ -1203,153 +882,6 @@ public class ImportData {
             }
         }
         return output;
-    }
-
-    private MSnSpectrum getSpectrum(String spectrumTitle) throws MzMLUnmarshallerException, IOException, FileParsingException {
-        MSnSpectrum currentSpectrum = null;
-
-        String spectrumFileName = spectrumTitle.split("\\.")[0];
-        if (Objects.equals(spectrumFileTypes.get(spectrumFileName), "mgf")){
-            currentSpectrum = (MSnSpectrum) spectrumFactory.getSpectrum(spectrumFileName + ".mgf", spectrumTitle);
-        } else if (Objects.equals(spectrumFileTypes.get(spectrumFileName), "_calibrated.mgf")){
-            currentSpectrum = (MSnSpectrum) spectrumFactory.getSpectrum(spectrumFileName + "_calibrated.mgf", spectrumTitle);
-        } else if (Objects.equals(spectrumFileTypes.get(spectrumFileName), "_uncalibrated.mgf")){
-            currentSpectrum = (MSnSpectrum) spectrumFactory.getSpectrum(spectrumFileName + "_uncalibrated.mgf", spectrumTitle);
-        } else if (Objects.equals(spectrumFileTypes.get(spectrumFileName), "mzml")){
-
-            ScanCollectionDefault currentNum2scan  = scansFileHashMap.get(spectrumFileName);
-            int scanNum = Integer.parseInt(spectrumTitle.split("\\.")[1]);
-            IScan iScan = currentNum2scan.getScanByNum(scanNum);
-            ISpectrum iSpectrum = iScan.fetchSpectrum();
-
-            Charge charge = new Charge(1, Integer.parseInt(spectrumTitle.split("\\.")[3]));
-            ArrayList<Charge> charges = new ArrayList<>();
-            charges.add(charge);
-
-            Double precursorInt = 0.0;
-            Double precursorMz = 0.0;
-            PrecursorInfo precursorInfo = iScan.getPrecursor();
-            if (precursorInfo.getIntensity() != null){
-                precursorInt = precursorInfo.getIntensity();
-            }
-            if (precursorInfo.getMzTargetMono() != null){
-                precursorMz = precursorInfo.getMzTargetMono();
-            } else {
-                precursorMz = precursorInfo.getMzTarget();
-            }
-
-            Precursor precursor = new Precursor(iScan.getRt(), precursorMz, precursorInt, charges);
-
-            double[] mzs = iSpectrum.getMZs();
-            double[] ins = iSpectrum.getIntensities();
-            HashMap<Double, Peak> peakHashMap = new HashMap<>();
-            for (int i = 0; i<mzs.length; i++){
-                Peak peak = new Peak(mzs[i], ins[i]);
-                peakHashMap.put(mzs[i], peak);
-            }
-
-            currentSpectrum = new MSnSpectrum(2, precursor, spectrumTitle.split("\\.")[1], peakHashMap, spectrumFileName);
-        }
-
-        return currentSpectrum;
-    }
-
-    private void getTableIndexes() throws IOException {
-        File oneProteinTable = resultsDict.get(resultsDict.keySet().toArray()[0]).get(0);
-        File onePSMTable = resultsDict.get(resultsDict.keySet().toArray()[0]).get(1);
-
-        BufferedReader pSMBufferedReader = new BufferedReader(new FileReader(onePSMTable));
-        String[] pSMHeaders = pSMBufferedReader.readLine().trim().split("\t");
-
-        HashMap<String, Integer> psmColumnNames = new HashMap<>(); // Some results have duplicated column names
-        HashMap<String, Integer> proteinColumnNames = new HashMap<>();
-
-        for (int i = 0; i < pSMHeaders.length; i++){
-
-            String header = pSMHeaders[i];
-
-            if (header.equalsIgnoreCase("Spectrum")) {
-                spectrumIndex = i;
-            } else if (header.equalsIgnoreCase("Peptide")) {
-                peptideSequenceIndex = i;
-            } else if (header.equalsIgnoreCase("Charge")) {
-                chargeIndex = i;
-            } else if (header.equalsIgnoreCase("Calculated M/Z")) {
-                caculatedMZIndex = i;
-            } else if (header.equalsIgnoreCase("Observed M/Z")) {
-                String columnName = header.trim().replace(" ", "");
-                if (columnName.matches(".*\\d+.*")){
-
-                    columnName = "'" + columnName + "'";
-                }
-                columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
-                psmIndexToName.put(i, columnName);
-                observedMZIndex = i;
-            } else if (header.equalsIgnoreCase("Assigned Modifications")) {
-                psmIndexToName.put(i, header.trim().replace(" ", ""));
-                assignenModIndex = i;
-            } else if (header.equalsIgnoreCase("Paired Scan Num")) {
-                hasPairedScanNum = true;
-                String columnName = header.trim().replace(" ", "");
-                psmIndexToName.put(i, columnName);
-            } else {
-                if (!header.equals("NA")){
-                    String columnName = header.trim().replace(" ", "");
-                    if (columnName.matches(".*\\d+.*")){
-
-                        columnName = "'" + columnName + "'";
-                    }
-                    columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
-                    if (psmColumnNames.containsKey(columnName)){
-                        int colCount = psmColumnNames.get(columnName);
-                        columnName = columnName + "_" + ( colCount + 1);
-                        psmColumnNames.put(columnName, colCount + 1);
-                    } else {
-                        psmColumnNames.put(columnName, 0);
-                    }
-                    psmIndexToName.put(i, columnName);
-                }
-            }
-        }
-
-        if (Files.exists(oneProteinTable.toPath())) {
-            BufferedReader proteinBufferedReader = new BufferedReader(new FileReader(oneProteinTable));
-            String[] proteinHeaders = proteinBufferedReader.readLine().trim().split("\t");
-
-            for (int i = 0; i < proteinHeaders.length; i++) {
-
-                String header = proteinHeaders[i];
-
-                if (header.equalsIgnoreCase("Protein")) {
-                    proteinIndex = i;
-                } else {
-                    String columnName = header.trim().replace(" ", "");
-                    if (columnName.matches(".*\\d+.*")) {
-
-                        columnName = "'" + columnName + "'";
-                    }
-                    columnName = columnName.replaceAll("[^a-zA-Z0-9]", "");
-                    if (columnName.equals("Group")) {
-                        columnName = "ProteinGroup";
-                    }
-
-                    if (!columnName.equals("NA")) {
-                        if (proteinColumnNames.containsKey(columnName)) {
-                            int colCount = proteinColumnNames.get(columnName);
-                            columnName = columnName + "_" + (colCount + 1);
-                            proteinColumnNames.put(columnName, colCount + 1);
-                        } else {
-                            proteinColumnNames.put(columnName, 0);
-                        }
-                        proteinIndexToName.put(i, columnName);
-                    }
-                }
-            }
-            proteinBufferedReader.close();
-        }
-
-        pSMBufferedReader.close();
-
     }
 
     private ArrayList<ModificationMatch> getUtilitiesModifications(String assignedMod, String peptideSequence){
@@ -1441,8 +973,8 @@ public class ImportData {
 
     private void getProteinSeq() throws IOException {
 
-        for (String each_exp : resultsDict.keySet()){
-            File proteinSeqFile = resultsDict.get(each_exp).get(3);
+        for (String each_exp : resultProcessor.resultsDict.keySet()){
+            File proteinSeqFile = resultProcessor.resultsDict.get(each_exp).get(3);
             if (!Files.exists(proteinSeqFile.toPath())){
                 proteinSeqMap.put("empty", "empty");
                 continue;
@@ -1486,8 +1018,8 @@ public class ImportData {
 
         ArrayList<String> scoreName = new ArrayList<>();
 
-        for (Integer index : proteinIndexToName.keySet()){
-            scoreName.add(proteinIndexToName.get(index));
+        for (Integer index : resultProcessor.proteinIndexToName.keySet()){
+            scoreName.add(resultProcessor.proteinIndexToName.get(index));
         }
         return scoreName;
     }
@@ -1500,8 +1032,8 @@ public class ImportData {
 
         ArrayList<String> scoreName = new ArrayList<>();
 
-        for (Integer index : psmIndexToName.keySet()){
-            scoreName.add(psmIndexToName.get(index));
+        for (Integer index : resultProcessor.psmIndexToName.keySet()){
+            scoreName.add(resultProcessor.psmIndexToName.get(index));
         }
         return scoreName;
     }
@@ -1516,7 +1048,7 @@ public class ImportData {
         return allModifications;
     }
 
-    public ArrayList<String> getExpNumList(){return expNumList;}
+    public ArrayList<String> getExpNumList(){return resultProcessor.expNumList;}
 
     /**
      * Return SQLiteConnection
@@ -1530,27 +1062,19 @@ public class ImportData {
         return experimentInfo;
     }
 
-    public HashMap<String, ScanCollectionDefault> getScansFileHashMap() {
-        return scansFileHashMap;
-    }
-
-    public HashMap<String, String> getSpectrumFileTypes() {
-        return spectrumFileTypes;
-    }
-
     public Boolean getHasPredictionSpectra() {
-        return hasPredictionSpectra;
+        return resultProcessor.hasPredictionSpectra;
     }
     public String getUseDiaNNPrediction() {
-        return predictedFileName;
+        return resultProcessor.predictedFileName;
     }
 
     public Boolean getHasPairedScanNum() {
-        return hasPairedScanNum;
+        return resultProcessor.hasPairedScanNum;
     }
 
     public ArrayList<String> getExpInformation() {
-        return expInformation;
+        return resultProcessor.expInformation;
     }
 
     public HashMap<String, PredictionEntry> getPredictionEntryHashMap() {
@@ -1562,6 +1086,6 @@ public class ImportData {
     }
 
     public HashMap<String, String> getSpectrumFileMap(){
-        return spectrumFileMap;
+        return resultProcessor.spectrumFileMap;
     }
 }

@@ -43,6 +43,7 @@ import com.compomics.util.gui.filehandling.TempFilesManager;
 import com.compomics.util.gui.waiting.waitinghandlers.ProgressDialogX;
 import com.compomics.util.preferences.*;
 import GUI.DB.SQLiteConnection;
+import org.apache.commons.cli.*;
 import uk.ac.ebi.jmzml.xml.io.MzMLUnmarshallerException;
 import umich.ms.datatypes.LCMSDataSubset;
 import umich.ms.datatypes.scan.IScan;
@@ -361,7 +362,6 @@ public class GUIMainClass extends JFrame {
      */
     public static final String FILE_SEPARATOR = System.getProperty("file.separator");
 
-
     public static void main(String[] args) {
         LookAndFeel lookAndFeel = UIManager.getLookAndFeel();
         UIDefaults defaults = lookAndFeel.getDefaults();
@@ -372,7 +372,11 @@ public class GUIMainClass extends JFrame {
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.META_DOWN_MASK), DefaultEditorKit.pasteAction);
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.META_DOWN_MASK), DefaultEditorKit.cutAction);
         try {
-            new GUIMainClass(args[0], args[1], args[2]);
+            if (args.length > 3 || args.length == 1){
+                new RunCMD(args);
+            } else {
+                new GUIMainClass(args[0], args[1], args[2]);
+            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(
                     null, e.getMessage(),
@@ -403,7 +407,6 @@ public class GUIMainClass extends JFrame {
 
             importData();
         }
-
     }
 
     private void initParameters(){
