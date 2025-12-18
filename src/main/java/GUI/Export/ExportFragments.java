@@ -244,6 +244,8 @@ public class ExportFragments {
 
             ArrayList<String[]> onePSMData = psmDataHashMap.get(expNum);
             ArrayList<IonMatch>[] ionMatches = new ArrayList[onePSMData.size()];
+
+//            getOneAnnotationSingle(onePSMData,  ionMatches);
             ArrayList<ArrayList<Integer>> psmIndexMulti = splitIntoSublists(onePSMData.size(), threadNum);
             final ArrayList<Future<?>> res1 = new ArrayList<>();
             for (int i = 0; i < threadNum; i++) {
@@ -255,6 +257,7 @@ public class ExportFragments {
             }
             ionMatchesHashMap.put(expNum, ionMatches);
         }
+        executorService.shutdown();
     }
 
     private Runnable getOneAnnotation(ArrayList<Integer> oneIndexList, ArrayList<String[]> onePSMData, ArrayList<IonMatch>[] ionMatches){
@@ -275,18 +278,34 @@ public class ExportFragments {
 
                     ionMatches[psmIndexCount] = annotations;
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | IOException | InterruptedException | ClassNotFoundException | FileParsingException e) {
                 e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (FileParsingException e) {
-                throw new RuntimeException(e);
             }
         };
+    }
+
+    private void getOneAnnotationSingle(ArrayList<String[]> onePSMData, ArrayList<IonMatch>[] ionMatches){
+
+        try {
+            for (int psmIndexCount = 0; psmIndexCount < onePSMData.size(); psmIndexCount++) {
+                String[] onePSM = onePSMData.get(psmIndexCount);
+                String spectrumTitle = onePSM[0];
+                MSnSpectrum currentSpectrum = getSpectrum(spectrumTitle);
+
+                Peptide peptide = new Peptide(onePSM[resultProcessor.peptideSequenceIndex], getUtilitiesModifications(onePSM[resultProcessor.assignenModIndex], onePSM[resultProcessor.peptideSequenceIndex]));
+
+                PeptideAssumption peptideAssumption = new PeptideAssumption(peptide, 1, 0, new Charge(+1, Integer.parseInt(onePSM[resultProcessor.chargeIndex])), 0, "*");
+
+                SpecificAnnotationSettings specificAnnotationSettings = annotationSettings.getSpecificAnnotationPreferences(spectrumTitle, peptideAssumption, SequenceMatchingPreferences.defaultStringMatching, SequenceMatchingPreferences.defaultStringMatching);
+
+                ArrayList<IonMatch> annotations = peptideSpectrumAnnotator.getSpectrumAnnotationFiter(annotationSettings, specificAnnotationSettings, currentSpectrum, peptide, null, ptmFactory, true);
+
+                ionMatches[psmIndexCount] = annotations;
+            }
+        } catch (SQLException | IOException | InterruptedException | ClassNotFoundException | FileParsingException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private ArrayList<ModificationMatch> getUtilitiesModifications(String assignedMod, String peptideSequence){
