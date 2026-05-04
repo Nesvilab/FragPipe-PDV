@@ -5,7 +5,6 @@ import com.compomics.util.experiment.biology.Peptide;
 import com.compomics.util.experiment.identification.identification_parameters.PtmSettings;
 import com.compomics.util.experiment.identification.identification_parameters.SearchParameters;
 import com.compomics.util.experiment.identification.matches.ModificationMatch;
-import it.unimi.dsi.fastutil.doubles.Double2LongArrayMap;
 import no.uib.jsparklines.renderers.JSparklinesColorTableCellRenderer;
 
 import javax.swing.*;

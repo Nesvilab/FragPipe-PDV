@@ -85,7 +85,6 @@ public class ResultProcessor {
      */
     public int spectrumIndex = -1, peptideSequenceIndex = -1, chargeIndex = -1, caculatedMZIndex = -1, observedMZIndex = -1, assignenModIndex = -1;
 
-
     public ResultProcessor(File resultsFolder, ProgressDialogX progressDialog) {
         this.resultsFolder = resultsFolder;
 
@@ -284,6 +283,13 @@ public class ResultProcessor {
                     spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.raw")[0], lineSplit[0].replace(".raw", "_calibrated.mzML"));
                 }
 
+            } else if (lineSplit[0].endsWith(".RAW")){
+                String[] fileArr = lineSplit[0].split(pattern);
+                if (new File(lineSplit[0].replace(".RAW", "_uncalibrated.mzML")).exists()){
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.RAW")[0], lineSplit[0].replace(".RAW", "_uncalibrated.mzML"));
+                } else {
+                    spectrumFileMap.put(fileArr[fileArr.length-1].split("\\.RAW")[0], lineSplit[0].replace(".RAW", "_calibrated.mzML"));
+                }
             } else if (lineSplit[0].endsWith(".d") && (Objects.equals(lineSplit[3], "DDA")|| Objects.equals(lineSplit[3], "DDA+"))){
                 String[] fileArr = lineSplit[0].split(pattern);
                 if (new File(lineSplit[0].replace(".d", "_uncalibrated.mzML")).exists()){

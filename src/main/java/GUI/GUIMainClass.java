@@ -3665,30 +3665,36 @@ public class GUIMainClass extends JFrame {
                     spectrumFileOrder.remove(eachFileName);
 
                     String spectralFilePath = spectrumFileMap.get(eachFileName);
+                    if (spectralFilePath == null){
+                        if (addNewFile) {
+                            importNewFileDialog.setRunFinished();
+                        }
+                        continue;
+                    }
                     if (Files.exists(new File(spectralFilePath).toPath())) {
                         loadingJButton.setText(eachFileName);
 
                         try {
                             readSpectrumFile(spectralFilePath, eachFileName);
-                            if (addNewFile && Objects.equals(newSpectrumFile, eachFileName)){
+                            if (addNewFile && Objects.equals(newSpectrumFile, eachFileName)) {
                                 updateSpectrum(getSpectrum(selectedPsmKey), spectrumMatch);
                                 importNewFileDialog.setRunFinished();
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
-                            if (addNewFile){
+                            if (addNewFile) {
                                 importNewFileDialog.setRunFinished();
                             }
                         }
                     } else {
                         JOptionPane.showMessageDialog(
                                 GUIMainClass.this, "Invalid spectrum file path in fragpipe-files.fp-manifest.\n" +
-                                        "Spectrum file <"+spectralFilePath+"> is not found.\n" +
+                                        "Spectrum file <" + spectralFilePath + "> is not found.\n" +
                                         "\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
                                 "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
-                        if (addNewFile){
-                            importNewFileDialog.setRunFinished();
-                        }
+//                        if (addNewFile){
+                        importNewFileDialog.setRunFinished();
+//                        }
                     }
                 }
 
@@ -3708,13 +3714,15 @@ public class GUIMainClass extends JFrame {
                 readSpectrumFile(spectralFilePath, spectrumFileName);
             } else {
                 JOptionPane.showMessageDialog(
-                        null, "Invalid spectrum file path in fragpipe-files.fp-manifest.\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
+                        GUIMainClass.this, "Invalid spectrum file path in fragpipe-files.fp-manifest.\n" +
+                                "Spectrum file <" + spectralFilePath + "> is not found.\n" +
+                                "\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
                         "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
                 progressDialog.setRunFinished();
             }
         } catch (Exception e){
             JOptionPane.showMessageDialog(
-                    null, "Invalid spectrum file path in fragpipe-files.fp-manifest.\nPlease update the spectrum file path in fragpipe-files.fp-manifest if they are moved.",
+                    null, "Spectrum file <" + spectralFilePath + "> can not be parsed.\n",
                     "Loading spectrum file error", JOptionPane.ERROR_MESSAGE);
             progressDialog.setRunFinished();
         }
