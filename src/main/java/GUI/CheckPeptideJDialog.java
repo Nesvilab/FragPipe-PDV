@@ -311,23 +311,20 @@ public class CheckPeptideJDialog extends JDialog {
     private void showSingleAAModification(JButton aAJButton){
         String aAName = aAJButton.getText();
 
-        ArrayList<String> singleModifications = new ArrayList<>();
-        if (aAName == "NH-"){
-            singleModifications.addAll(aASingleModification.get("N-terminus"));
-        }else if(aAName == "-COOH"){
-            singleModifications.addAll(aASingleModification.get("C-terminus"));
-        }else {
-            singleModifications = aASingleModification.get(aAName);
+        ArrayList<String> singleModifications;
+        if (aAName.equals("NH-")){
+            singleModifications = aASingleModification.getOrDefault("N-terminus", new ArrayList<>());
+        } else if(aAName.equals("-COOH")){
+            singleModifications = aASingleModification.getOrDefault("C-terminus", new ArrayList<>());
+        } else {
+            singleModifications = aASingleModification.getOrDefault(aAName, new ArrayList<>());
         }
 
-        if(singleModifications != null){
+        Collections.sort(singleModifications);
 
-            Collections.sort(singleModifications);
+        String[] singleModificationsArray = singleModifications.toArray(new String[0]);
 
-            String[] singleModificationsArray = singleModifications.toArray(new String[0]);
-
-            new ModificationDialog(this, aAJButton, singleModificationsArray);
-        }
+        new ModificationDialog(this, aAJButton, singleModificationsArray);
     }
 
     /**
