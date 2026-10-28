@@ -6,6 +6,8 @@ FragPipe-PDV is a customized version of PDV for FragPipe. I changed the GUI layo
 
 The FragPipe-PDV packages are free to download at [https://github.com/Nesvilab/FragPipe-PDV/releases](https://github.com/Nesvilab/FragPipe-PDV/releases).
 
+FragPipe-PDV requires Java 17 or higher.
+
 ## Ways to run
 
 ### Run in FragPipe (Recommended)
