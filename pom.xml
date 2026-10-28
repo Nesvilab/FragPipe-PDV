@@ -95,7 +95,11 @@
             </plugin>
 
             <!-- Install compomics utilities from the 'lib' directory into the local maven repo on 'clean'.
-                 4.11.14 is no longer in any remote repository; the POM is the one embedded in the jar. -->
+                 4.11.14 is no longer in any remote repository; the POM is the one embedded in the jar.
+                 The jar is the 4.11.14 rebuild that FragPipe ships in tools/fp-pdv/lib (with log4j-core
+                 2.17.1), not the original 2018 4.11.14 jar.
+                 Maven resolves dependencies before the clean phase runs, so on a fresh local repo run
+                 'mvn clean' on its own first, then 'mvn package'. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
