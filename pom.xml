@@ -270,23 +270,12 @@
         </dependency>
 
         <dependency>
-            <groupId>umich.ms</groupId>
+            <groupId>com.github.chhh</groupId>
             <artifactId>batmass-io</artifactId>
-            <version>1.36.8</version>
+            <version>1.38.0</version>
             <exclusions>
-                <!-- gRPC + Netty stack (FP-PDV doesn't use any RPC) -->
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-protobuf</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-stub</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-netty-shaded</artifactId>
-                </exclusion>
+                <!-- protobuf is only used by batmass-io's Thermo reader, and the
+                     batmass-io fat jar already bundles it -->
                 <exclusion>
                     <groupId>com.google.protobuf</groupId>
                     <artifactId>protobuf-java</artifactId>
