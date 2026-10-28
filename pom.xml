@@ -94,8 +94,9 @@
                 </executions>
             </plugin>
 
-            <!-- Install compomics utilities from the 'lib' directory into the local maven repo on 'clean'.
-                 4.11.14 is no longer in any remote repository; the POM is the one embedded in the jar.
+            <!-- Install compomics utilities and batmass-io from the 'lib' directory into the local maven repo
+                 on 'clean'.
+                 utilities 4.11.14 is no longer in any remote repository; the POM is the one embedded in the jar.
                  The jar is the 4.11.14 rebuild that FragPipe ships in tools/fp-pdv/lib (with log4j-core
                  2.17.1), not the original 2018 4.11.14 jar.
                  Maven resolves dependencies before the clean phase runs, so on a fresh local repo run
@@ -111,6 +112,19 @@
                         <configuration>
                             <file>${basedir}/lib/utilities-4.11.14.jar</file>
                             <pomFile>${basedir}/lib/utilities-4.11.14.pom</pomFile>
+                        </configuration>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                    </execution>
+                    <!-- batmass-io is not published to any public repository (not Maven Central, not JitPack).
+                         The jar and POM are the batmass-io release files; FragPipe ships the same jar in tools/. -->
+                    <execution>
+                        <id>install-batmass-io</id>
+                        <phase>clean</phase>
+                        <configuration>
+                            <file>${basedir}/lib/batmass-io-1.38.0.jar</file>
+                            <pomFile>${basedir}/lib/batmass-io-1.38.0.pom</pomFile>
                         </configuration>
                         <goals>
                             <goal>install-file</goal>
